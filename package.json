@@ -1,0 +1,13 @@
+{
+  "name": "dsa-tracker-client",
+  "version": "1.0.0",
+  "description": "DSA Tracker — Frontend Web Application",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve@latest -l 5500 .",
+    "dev": "npx serve@latest -l 5500 ."
+  },
+  "keywords": ["dsa", "learning", "tracker"],
+  "author": "",
+  "license": "ISC"
+}

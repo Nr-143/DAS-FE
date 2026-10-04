@@ -1,0 +1,61 @@
+<USER_REQUEST>
+# Antigravity Build Prompt — Add LeetCode Practice Problems to Matching Lessons
+
+Paste this whole prompt into Antigravity as one task. This adds a **Practice Problems (LeetCode)** block to the Questions tab of specific, already-unlocked lessons. It does NOT unlock any new topics, does NOT touch any lesson's Concept tab content, and does NOT add company-tag data (see Section 0 for why).
+
+---
+
+## 0. Source of truth and a hard limit — read first
+
+Every problem, number, difficulty, concept tag, and ordering below comes directly from the user's own LeetCode roadmap notes. **Do not add, remove, reassign, or invent anything beyond what's listed here** — no extra problems, no difficulty labels where none is given below, no algorithm assignment where the source didn't specify one.
+
+**Do not add "companies that ask this problem" data.** That information is either LeetCode-premium / proprietary, or crowdsourced and constantly changing — there is no reliable, verifiable source for it here, and fabricating it would violate the no-fabrication rule this whole project runs on. Leave it out entirely rather than guess or pull from general training knowledge that can't be verified as current.
+
+Build one small reusable `<LeetCodePractice>` component (problem number, title linking to `https://leetcode.com/problems/<slug>/`, difficulty badge if provided, concept tag if provided, optional "Roadmap step X of 15" or "Immediate next 5" badge) and reuse it across every lesson listed below — don't hand-build this per page.
+
+---
+
+## 1. Arrays — add to Questions tab
+
+| # | Problem | Concept | Slug |
+|---|---|---|---|
+| 1 | Two Sum | Array + Hash Map | `two-sum` |
+| 121 | Best Time to Buy and Sell Stock | Array | `best-time-to-buy-and-sell-stock` |
+| 217 | Contains Duplicate | Array + Set | `contains-duplicate` |
+| 268 | Missing Number | Array | `missing-number` |
+| 136 | Single Number | Array + XOR | `single-number` |
+
+No difficulty was specified for this set in the source — don't add one
+<truncated 7698 bytes>
+ this only adds to the Questions tab.
+- Don't add any problems to the Queue lesson.
+- One shared `<LeetCodePractice>` component and one shared process-callout component, reused everywhere — not rebuilt per lesson.
+- Links must point to the exact slugs given — don't alter or guess a different slug.
+
+## 12. Acceptance checklist
+
+- [ ] Arrays, Binary Search, Strings, Linked List (Singly), Stack, Merge Sort, and Recursion each show their practice list from Sections 1–6 and 8
+- [ ] All five sorting lessons additionally show the shared "general sorting practice" block from Section 7
+- [ ] Queue lesson has no new problems added
+- [ ] Valid Parentheses (20) appears on both Strings and Stack
+- [ ] Suggested starting problems and the Linked List solving order (876→206→21→141→19) are shown
+- [ ] Roadmap step badges appear correctly on the 15 relevant problems; "immediate next 5" highlighted
+- [ ] The problem-solving process callout appears on every lesson with a practice list, with the Two Sum-specific note only under Arrays
+- [ ] No company-tag data anywhere
+- [ ] No Concept-tab content, definitions, or existing animations were changed
+- [ ] No console errors; responsive at 320px–1920px
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-04T17:15:09+05:30.
+
+The user's current state is as follows:
+Other open documents:
+- c:\Users\nirma\OneDrive\Desktop\DSA-1\client\content\lessons\core-built-ins.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\nirma\OneDrive\Desktop\DSA-1\client\data\topics.json (LANGUAGE_JSON)
+- c:\Users\nirma\OneDrive\Desktop\DSA-1\client\index.css (LANGUAGE_CSS)
+- c:\Users\nirma\OneDrive\Desktop\DSA-1\client\content\lessons\strings.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\nirma\OneDrive\Desktop\DSA-1\client\content\lessons\recursion.js (LANGUAGE_JAVASCRIPT)
+Running terminal commands:
+- npm run dev (in c:\Users\nirma\OneDrive\Desktop\DSA-1\server, running for 3m14s)
+- npm run dev (in c:\Users\nirma\OneDrive\Desktop\DSA-1\client, running for 3m5s)
+</ADDITIONAL_METADATA>
