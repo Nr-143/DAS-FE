@@ -4,6 +4,7 @@
   "description": "DSA Tracker — Frontend Web Application",
   "main": "index.html",
   "scripts": {
+    "build": "echo 'Static site ready'",
     "start": "npx serve@latest -l 5500 .",
     "dev": "npx serve@latest -l 5500 ."
   },
