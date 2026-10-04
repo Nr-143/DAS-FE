@@ -22,7 +22,17 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-const itemsToCopy = ['index.html', 'index.css', 'app.js', 'config.js', 'data', 'content'];
+const itemsToCopy = [
+  'index.html',
+  'dsa.html',
+  'index.css',
+  'landing.css',
+  'app.js',
+  'config.js',
+  'data',
+  'content'
+];
+
 itemsToCopy.forEach(item => {
   const srcPath = path.join(__dirname, item);
   const destPath = path.join(dist, item);
