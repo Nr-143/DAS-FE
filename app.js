@@ -40,7 +40,7 @@
   const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress';
   const STORAGE_KEY_NOTES    = 'dsa-tracker-notes';
   const STORAGE_KEY_THEME    = 'dsa-tracker-theme';
-  const API_BASE             = 'http://localhost:3001/api';
+  const API_BASE             = (window.ENV && window.ENV.API_BASE_URL) || 'http://localhost:3001/api';
   const TOAST_DURATION       = 2400;
 
   /* ────────── DOM Elements ────────── */
