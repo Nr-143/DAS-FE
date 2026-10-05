@@ -41,8 +41,8 @@ window.LESSONS_CONTENT["linked-list-singly"] = {
         <text x="350" y="28" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Singly Linked List: Head → Node → Node → Tail (null)</text>
         
         <g transform="translate(20, 55)">
-          <text x="45" y="-5" fill="#10B981" font-size="11" font-weight="bold">HEAD</text>
-          <rect x="0" y="0" width="90" height="55" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="2" rx="8"/>
+          <text x="45" y="-5" fill="#34d399" font-size="11" font-weight="bold">HEAD</text>
+          <rect x="0" y="0" width="90" height="55" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="8"/>
           <text x="45" y="22" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">10</text>
           <text x="45" y="42" fill="var(--text-muted)" font-size="10" text-anchor="middle">next →</text>
         </g>
@@ -50,7 +50,7 @@ window.LESSONS_CONTENT["linked-list-singly"] = {
         <line x1="115" y1="82" x2="155" y2="82" stroke="var(--accent-primary)" stroke-width="2.5" marker-end="url(#sll-arrow)"/>
         
         <g transform="translate(160, 55)">
-          <rect x="0" y="0" width="90" height="55" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="8"/>
+          <rect x="0" y="0" width="90" height="55" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="8"/>
           <text x="45" y="22" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">20</text>
           <text x="45" y="42" fill="var(--text-muted)" font-size="10" text-anchor="middle">next →</text>
         </g>
@@ -58,7 +58,7 @@ window.LESSONS_CONTENT["linked-list-singly"] = {
         <line x1="255" y1="82" x2="295" y2="82" stroke="var(--accent-primary)" stroke-width="2.5" marker-end="url(#sll-arrow)"/>
         
         <g transform="translate(300, 55)">
-          <rect x="0" y="0" width="90" height="55" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="8"/>
+          <rect x="0" y="0" width="90" height="55" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="8"/>
           <text x="45" y="22" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">30</text>
           <text x="45" y="42" fill="var(--text-muted)" font-size="10" text-anchor="middle">next →</text>
         </g>
@@ -66,17 +66,17 @@ window.LESSONS_CONTENT["linked-list-singly"] = {
         <line x1="395" y1="82" x2="435" y2="82" stroke="var(--accent-primary)" stroke-width="2.5" marker-end="url(#sll-arrow)"/>
         
         <g transform="translate(440, 55)">
-          <text x="45" y="-5" fill="#EF4444" font-size="11" font-weight="bold">TAIL</text>
-          <rect x="0" y="0" width="90" height="55" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="2" rx="8"/>
+          <text x="45" y="-5" fill="#f87171" font-size="11" font-weight="bold">TAIL</text>
+          <rect x="0" y="0" width="90" height="55" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="8"/>
           <text x="45" y="22" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">40</text>
           <text x="45" y="42" fill="var(--text-muted)" font-size="10" text-anchor="middle">next: null</text>
         </g>
         
         <g transform="translate(30, 135)">
           <rect width="630" height="45" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="18" fill="#10B981" font-size="12" font-weight="bold">addFirst() → O(1)</text>
+          <text x="20" y="18" fill="#34d399" font-size="12" font-weight="bold">addFirst() → O(1)</text>
           <text x="20" y="35" fill="var(--text-secondary)" font-size="11">Just create new node, point it at old head, update head.</text>
-          <text x="350" y="18" fill="#EF4444" font-size="12" font-weight="bold">Access by position → O(n)</text>
+          <text x="350" y="18" fill="#f87171" font-size="12" font-weight="bold">Access by position → O(n)</text>
           <text x="350" y="35" fill="var(--text-secondary)" font-size="11">Must walk pointer by pointer from head — no index jump.</text>
         </g>
         

@@ -53,33 +53,33 @@ window.LESSONS_CONTENT["stack"] = {
           <rect x="30" y="85" width="200" height="35" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="1.5" rx="5"/>
           <text x="130" y="108" fill="var(--text-primary)" font-size="13" font-weight="600" text-anchor="middle">2</text>
           
-          <rect x="30" y="45" width="200" height="35" fill="rgba(16,185,129,0.25)" stroke="#10B981" stroke-width="2.5" rx="5"/>
-          <text x="130" y="68" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">3 ← TOP</text>
+          <rect x="30" y="45" width="200" height="35" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="5"/>
+          <text x="130" y="68" fill="#34d399" font-size="13" font-weight="bold" text-anchor="middle">3 ← TOP</text>
           
           <text x="130" y="20" fill="var(--text-muted)" font-size="11" text-anchor="middle">push()/pop() here only ↑</text>
         </g>
         
         <g transform="translate(30, 60)">
-          <text x="0" y="10" fill="#10B981" font-size="12" font-weight="bold">push(3)</text>
-          <path d="M 55 15 Q 100 20 160 40" stroke="#10B981" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-g)"/>
+          <text x="0" y="10" fill="#34d399" font-size="12" font-weight="bold">push(3)</text>
+          <path d="M 55 15 Q 100 20 160 40" stroke="#2d8a68" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-g)"/>
           
-          <text x="0" y="65" fill="#EF4444" font-size="12" font-weight="bold">pop() → 3</text>
-          <path d="M 70 55 Q 110 45 155 40" stroke="#EF4444" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-r)"/>
+          <text x="0" y="65" fill="#f87171" font-size="12" font-weight="bold">pop() → 3</text>
+          <path d="M 70 55 Q 110 45 155 40" stroke="#b84a4a" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-r)"/>
         </g>
         
         <g transform="translate(510, 80)">
           <text x="0" y="0" fill="var(--text-muted)" font-size="11" font-weight="bold">Array state:</text>
           <text x="0" y="18" fill="var(--accent-primary)" font-size="12" font-family="monospace">[1, 2, 3]</text>
           <text x="0" y="42" fill="var(--text-muted)" font-size="11" font-weight="bold">After pop():</text>
-          <text x="0" y="60" fill="#EF4444" font-size="12" font-family="monospace">[1, 2]</text>
+          <text x="0" y="60" fill="#f87171" font-size="12" font-family="monospace">[1, 2]</text>
         </g>
         
         <defs>
           <marker id="stk-arrow-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10B981"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2d8a68"/>
           </marker>
           <marker id="stk-arrow-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#EF4444"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84a4a"/>
           </marker>
         </defs>
       </svg>

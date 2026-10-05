@@ -12,6 +12,8 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
   levelTitle: "Level 1 — Foundations",
   summary: "Understand what Data Structures and Algorithms are, how they work together, and why picking the right combination matters.",
 
+  whyMatters: "DSA shows up constantly in real software work and in how software engineers are hired. It's widely regarded as one of the most heavily tested areas in technical interviews, across companies of every size. But the bigger reason to actually learn it well: the difference between an O(n²) function and an O(n log n) one isn't academic — it's the difference between a feature that feels instant and one that visibly slows down or times out as real data grows. You already saw this on this exact page: 1,000 operations vs. ~10, for the same task.",
+
   definitions: [
     {
       term: "Data Structure",
@@ -29,12 +31,12 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
 
   howItWorksTogether: "A data structure is the container you choose for your data. An algorithm is the set of instructions you run on that container. DSA is about picking the right container AND the right instructions together — because the same task can be fast or painfully slow depending on that combination. For example, finding a name in an unsorted list means checking every entry one by one. Store the same names in a sorted structure instead, and you can use a much faster search algorithm (binary search) that eliminates half the remaining options at every step. Learn more in <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"time-complexity\">Time Complexity (Big-O)</a>.",
 
-  whyItMatters: "Software engineering at scale relies on choosing optimal data organization and computation paths. Using the wrong combination can turn an application taking milliseconds into one that hangs for minutes as data grows.",
-
   workedExample: {
     title: "Searching for a Contact: Unsorted Array vs. Sorted Array with Binary Search",
     primitiveText: "<strong>Scenario A (Unsorted Array):</strong> Searching for a name among 1,000 unsorted contacts requires linear search, checking up to 1,000 entries one by one.",
-    referenceText: "<strong>Scenario B (Sorted Array + Binary Search):</strong> Storing those 1,000 names in a sorted array enables Binary Search, which checks the middle element and discards half the list each time — taking at most ~10 checks (log₂ 1000 ≈ 10). Same data, same task, wildly different speed because of the data structure + algorithm chosen together."
+    referenceText: "<strong>Scenario B (Sorted Array + Binary Search):</strong> Storing those 1,000 names in a sorted array enables Binary Search, which checks the middle element and discards half the list each time — taking at most ~10 checks (log₂ 1000 ≈ 10). Same data, same task, wildly different speed because of the data structure + algorithm chosen together.",
+    selfCheckPrompt: "Before scrolling further — which do you think is faster for finding a name among 1,000 sorted entries?",
+    selfCheckExplanation: "Binary Search — at most ~10 checks (log₂ 1000 ≈ 10) vs. up to 1,000 for Linear Search, exactly like Figure 1 above."
   },
 
   visual: {
@@ -48,21 +50,21 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
           <text x="150" y="50" fill="var(--text-muted)" font-size="11" text-anchor="middle">Checks up to 1,000 entries one-by-one</text>
           
           <g transform="translate(20, 75)">
-            <rect x="0" y="0" width="45" height="40" fill="rgba(239,68,68,0.2)" stroke="#EF4444" rx="4"/>
+            <rect x="0" y="0" width="45" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" rx="4"/>
             <text x="22.5" y="24" fill="var(--text-primary)" font-size="11" text-anchor="middle">#1</text>
             
-            <rect x="52" y="0" width="45" height="40" fill="rgba(239,68,68,0.2)" stroke="#EF4444" rx="4"/>
+            <rect x="52" y="0" width="45" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" rx="4"/>
             <text x="74.5" y="24" fill="var(--text-primary)" font-size="11" text-anchor="middle">#2</text>
             
-            <rect x="104" y="0" width="45" height="40" fill="rgba(239,68,68,0.2)" stroke="#EF4444" rx="4"/>
+            <rect x="104" y="0" width="45" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" rx="4"/>
             <text x="126.5" y="24" fill="var(--text-primary)" font-size="11" text-anchor="middle">#3</text>
             
             <text x="175" y="24" fill="var(--text-muted)" font-size="14">...</text>
             
-            <rect x="205" y="0" width="55" height="40" fill="rgba(239,68,68,0.2)" stroke="#EF4444" rx="4"/>
+            <rect x="205" y="0" width="55" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" rx="4"/>
             <text x="232.5" y="24" fill="var(--text-primary)" font-size="11" text-anchor="middle">#1000</text>
           </g>
-          <text x="150" y="155" fill="#EF4444" font-size="12" font-weight="bold" text-anchor="middle">Worst case: 1,000 operations</text>
+          <text x="150" y="155" fill="#f87171" font-size="12" font-weight="bold" text-anchor="middle">Worst case: 1,000 operations</text>
         </g>
         
         <g transform="translate(370, 25)">
@@ -71,12 +73,12 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
           <text x="150" y="50" fill="var(--text-muted)" font-size="11" text-anchor="middle">Eliminates half remaining options each step</text>
           
           <g transform="translate(20, 75)">
-            <rect x="0" y="0" width="260" height="35" fill="rgba(16,185,129,0.15)" stroke="#10B981" rx="6"/>
-            <line x1="130" y1="0" x2="130" y2="35" stroke="#10B981" stroke-width="2" stroke-dasharray="3,3"/>
+            <rect x="0" y="0" width="260" height="35" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" rx="6"/>
+            <line x1="130" y1="0" x2="130" y2="35" stroke="#2d8a68" stroke-width="2" stroke-dasharray="3,3"/>
             <text x="65" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">Discard 500</text>
-            <text x="195" y="22" fill="#10B981" font-size="11" font-weight="bold" text-anchor="middle">Keep 500</text>
+            <text x="195" y="22" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">Keep 500</text>
           </g>
-          <text x="150" y="155" fill="#10B981" font-size="12" font-weight="bold" text-anchor="middle">Worst case: ~10 operations (log₂ n)</text>
+          <text x="150" y="155" fill="#34d399" font-size="12" font-weight="bold" text-anchor="middle">Worst case: ~10 operations (log₂ n)</text>
         </g>
       </svg>
     `
@@ -118,6 +120,36 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
       desc: "Ignoring which data structure actually fits the problem and forcing everything into an array out of habit, missing out on hash map constant lookups or stack LIFO ordering."
     }
   ],
+
+  realWorldDsa: [
+    {
+      item: "A browser's Back button",
+      structure: "Stack (LIFO)",
+      note: "the exact structure already unlocked on this roadmap."
+    },
+    {
+      item: "A printer's print queue",
+      structure: "Queue (FIFO)",
+      note: "also already unlocked."
+    },
+    {
+      item: "Autocomplete / spell-check suggestions",
+      structure: "Trie (prefix tree)",
+      note: "coming up later in Level 5 (Trees)."
+    },
+    {
+      item: "A map app finding the shortest route",
+      structure: "Graph algorithms",
+      note: "coming up in Level 6 (Graphs)."
+    },
+    {
+      item: "Fast lookups in a database or in-memory cache",
+      structure: "Hash Tables",
+      note: "coming up in Level 4 (Hashing)."
+    }
+  ],
+
+  historyFact: "The word \"algorithm\" itself comes from the name of Muhammad ibn Musa al-Khwarizmi, a 9th-century Persian mathematician whose work on step-by-step methods for solving equations was hugely influential — his name, Latinized, is where \"algorithm\" comes from.",
 
   practice: [
     {

@@ -41,32 +41,32 @@ window.LESSONS_CONTENT["arrays"] = {
         <text x="350" y="30" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Array: O(1) Access by Index</text>
         
         <g transform="translate(50, 50)">
-          <rect x="0" y="0" width="100" height="50" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="2" rx="6"/>
+          <rect x="0" y="0" width="100" height="50" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="6"/>
           <text x="50" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 0</text>
           <text x="50" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"apple"</text>
           
-          <rect x="110" y="0" width="100" height="50" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="6"/>
+          <rect x="110" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
           <text x="160" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 1</text>
           <text x="160" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"banana"</text>
           
-          <rect x="220" y="0" width="100" height="50" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="6"/>
+          <rect x="220" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
           <text x="270" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 2</text>
           <text x="270" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"cherry"</text>
           
-          <rect x="330" y="0" width="100" height="50" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="6"/>
+          <rect x="330" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
           <text x="380" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 3</text>
           <text x="380" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"date"</text>
           
-          <rect x="440" y="0" width="100" height="50" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="2" rx="6" stroke-dasharray="5,3"/>
+          <rect x="440" y="0" width="100" height="50" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="6" stroke-dasharray="5,3"/>
           <text x="490" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 4</text>
-          <text x="490" y="40" fill="#EF4444" font-size="12" font-weight="bold" text-anchor="middle">undefined</text>
+          <text x="490" y="40" fill="#f87171" font-size="12" font-weight="bold" text-anchor="middle">undefined</text>
         </g>
         
         <g transform="translate(50, 120)">
           <rect width="600" height="70" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="25" fill="#10B981" font-size="12" font-weight="bold">arr[0] → O(1)</text>
+          <text x="20" y="25" fill="#34d399" font-size="12" font-weight="bold">arr[0] → O(1)</text>
           <text x="20" y="45" fill="var(--text-secondary)" font-size="11">Direct jump — no scanning needed. Position computed from index.</text>
-          <text x="320" y="25" fill="#EF4444" font-size="12" font-weight="bold">arr.unshift("kiwi") → O(n)</text>
+          <text x="320" y="25" fill="#f87171" font-size="12" font-weight="bold">arr.unshift("kiwi") → O(n)</text>
           <text x="320" y="45" fill="var(--text-secondary)" font-size="11">Every element must shift right to make room at index 0.</text>
         </g>
       </svg>

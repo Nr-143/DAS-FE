@@ -45,39 +45,39 @@ window.LESSONS_CONTENT["queue"] = {
         <text x="350" y="28" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Queue: FIFO — First In, First Out</text>
         
         <g transform="translate(100, 55)">
-          <text x="-5" y="-8" fill="#EF4444" font-size="11" font-weight="bold">FRONT</text>
-          <text x="460" y="-8" fill="#10B981" font-size="11" font-weight="bold">REAR</text>
+          <text x="-5" y="-8" fill="#f87171" font-size="11" font-weight="bold">FRONT</text>
+          <text x="460" y="-8" fill="#34d399" font-size="11" font-weight="bold">REAR</text>
           
           <rect x="0" y="0" width="500" height="70" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10"/>
           
-          <rect x="15" y="12" width="90" height="46" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="2" rx="6"/>
+          <rect x="15" y="12" width="90" height="46" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="6"/>
           <text x="60" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">1</text>
           
-          <rect x="120" y="12" width="90" height="46" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="1.5" rx="6"/>
+          <rect x="120" y="12" width="90" height="46" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="1.5" rx="6"/>
           <text x="165" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">2</text>
           
-          <rect x="225" y="12" width="90" height="46" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="1.5" rx="6"/>
+          <rect x="225" y="12" width="90" height="46" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="1.5" rx="6"/>
           <text x="270" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">3</text>
           
-          <rect x="330" y="12" width="90" height="46" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="2" rx="6"/>
+          <rect x="330" y="12" width="90" height="46" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="6"/>
           <text x="375" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">4</text>
         </g>
         
         <g transform="translate(25, 72)">
-          <text x="0" y="0" fill="#EF4444" font-size="12" font-weight="bold">dequeue()</text>
-          <text x="0" y="15" fill="#EF4444" font-size="11">→ returns 1</text>
+          <text x="0" y="0" fill="#f87171" font-size="12" font-weight="bold">dequeue()</text>
+          <text x="0" y="15" fill="#f87171" font-size="11">→ returns 1</text>
         </g>
         
         <g transform="translate(610, 72)">
-          <text x="0" y="0" fill="#10B981" font-size="12" font-weight="bold">enqueue(5)</text>
-          <text x="0" y="15" fill="#10B981" font-size="11">← adds here</text>
+          <text x="0" y="0" fill="#34d399" font-size="12" font-weight="bold">enqueue(5)</text>
+          <text x="0" y="15" fill="#34d399" font-size="11">← adds here</text>
         </g>
         
         <g transform="translate(100, 145)">
           <rect width="500" height="50" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="20" fill="#EF4444" font-size="12" font-weight="bold">dequeue → removes from FRONT</text>
+          <text x="20" y="20" fill="#f87171" font-size="12" font-weight="bold">dequeue → removes from FRONT</text>
           <text x="20" y="38" fill="var(--text-secondary)" font-size="11">First person in line served first (FIFO).</text>
-          <text x="290" y="20" fill="#10B981" font-size="12" font-weight="bold">enqueue → adds to REAR</text>
+          <text x="290" y="20" fill="#34d399" font-size="12" font-weight="bold">enqueue → adds to REAR</text>
           <text x="290" y="38" fill="var(--text-secondary)" font-size="11">New arrivals join at the back of the line.</text>
         </g>
       </svg>

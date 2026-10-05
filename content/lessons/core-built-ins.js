@@ -62,31 +62,31 @@ window.LESSONS_CONTENT["core-builtins"] = {
         <!-- Left panel: MUTATING -->
         <g transform="translate(20, 15)">
           <rect width="310" height="270" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
-          <rect x="0" y="0" width="310" height="40" fill="rgba(239,68,68,0.12)" stroke="#EF4444" stroke-width="2" rx="10" ry="10"/>
-          <text x="155" y="27" fill="#EF4444" font-size="14" font-weight="bold" text-anchor="middle">MUTATES Original Array</text>
+          <rect x="0" y="0" width="310" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="10" ry="10"/>
+          <text x="155" y="27" fill="#f87171" font-size="14" font-weight="bold" text-anchor="middle">MUTATES Original Array</text>
 
-          <rect x="25" y="55" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="25" y="55" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="85" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.sort()</text>
 
-          <rect x="165" y="55" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="165" y="55" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="225" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.splice()</text>
 
-          <rect x="25" y="97" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="25" y="97" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="85" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.reverse()</text>
 
-          <rect x="165" y="97" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="165" y="97" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="225" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.push()</text>
 
-          <rect x="25" y="139" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="25" y="139" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.pop()</text>
 
-          <rect x="165" y="139" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="165" y="139" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.shift()</text>
 
-          <rect x="25" y="181" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="25" y="181" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="85" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.unshift()</text>
 
-          <rect x="165" y="181" width="120" height="32" fill="rgba(239,68,68,0.08)" stroke="#EF4444" rx="6"/>
+          <rect x="165" y="181" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
           <text x="225" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.fill()</text>
 
           <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Changes the array in place.</text>
@@ -96,31 +96,31 @@ window.LESSONS_CONTENT["core-builtins"] = {
         <!-- Right panel: NON-MUTATING -->
         <g transform="translate(370, 15)">
           <rect width="310" height="270" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
-          <rect x="0" y="0" width="310" height="40" fill="rgba(16,185,129,0.12)" stroke="#10B981" stroke-width="2" rx="10" ry="10"/>
-          <text x="155" y="27" fill="#10B981" font-size="14" font-weight="bold" text-anchor="middle">Returns NEW Array (Safe)</text>
+          <rect x="0" y="0" width="310" height="40" fill="rgba(43,138,136,0.12)" stroke="#2b8a88" stroke-width="2" rx="10" ry="10"/>
+          <text x="155" y="27" fill="#2dd4bf" font-size="14" font-weight="bold" text-anchor="middle">Returns NEW Array (Safe)</text>
 
-          <rect x="25" y="55" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="25" y="55" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="85" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.map()</text>
 
-          <rect x="165" y="55" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="165" y="55" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="225" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.filter()</text>
 
-          <rect x="25" y="97" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="25" y="97" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="85" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.slice()</text>
 
-          <rect x="165" y="97" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="165" y="97" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="225" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.concat()</text>
 
-          <rect x="25" y="139" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="25" y="139" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.flat()</text>
 
-          <rect x="165" y="139" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="165" y="139" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.flatMap()</text>
 
-          <rect x="25" y="181" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="25" y="181" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="85" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.toSorted()</text>
 
-          <rect x="165" y="181" width="120" height="32" fill="rgba(16,185,129,0.08)" stroke="#10B981" rx="6"/>
+          <rect x="165" y="181" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
           <text x="225" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.toReversed()</text>
 
           <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Original array stays unchanged.</text>

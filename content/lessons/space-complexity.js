@@ -50,16 +50,16 @@ window.LESSONS_CONTENT["space-complexity"] = {
           <rect width="300" height="190" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
           <text x="150" y="30" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">1. RECURSIVE (O(n) Stack Space)</text>
           
-          <rect x="25" y="50" width="250" height="28" fill="rgba(239,68,68,0.15)" stroke="#EF4444" rx="4"/>
+          <rect x="25" y="50" width="250" height="28" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" rx="4"/>
           <text x="35" y="69" fill="var(--text-primary)" font-size="11" font-weight="600">factorialRecursive(1) [Frame 4]</text>
           
-          <rect x="25" y="82" width="250" height="28" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" rx="4"/>
+          <rect x="25" y="82" width="250" height="28" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" rx="4"/>
           <text x="35" y="101" fill="var(--text-primary)" font-size="11" font-weight="600">factorialRecursive(2) [Frame 3]</text>
           
-          <rect x="25" y="114" width="250" height="28" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" rx="4"/>
+          <rect x="25" y="114" width="250" height="28" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" rx="4"/>
           <text x="35" y="133" fill="var(--text-primary)" font-size="11" font-weight="600">factorialRecursive(3) [Frame 2]</text>
           
-          <rect x="25" y="146" width="250" height="28" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" rx="4"/>
+          <rect x="25" y="146" width="250" height="28" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" rx="4"/>
           <text x="35" y="165" fill="var(--text-primary)" font-size="11" font-weight="600">factorialRecursive(4) [Frame 1]</text>
         </g>
         
@@ -67,9 +67,9 @@ window.LESSONS_CONTENT["space-complexity"] = {
           <rect width="300" height="190" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
           <text x="150" y="30" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">2. ITERATIVE (O(1) Auxiliary Space)</text>
           
-          <rect x="25" y="75" width="250" height="70" fill="rgba(16,185,129,0.15)" stroke="#10B981" stroke-width="2" rx="8"/>
+          <rect x="25" y="75" width="250" height="70" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="8"/>
           <text x="150" y="105" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">Variable: result = 24</text>
-          <text x="150" y="127" fill="var(--accent-secondary)" font-size="11" font-weight="600" text-anchor="middle">Single slot re-used throughout loop</text>
+          <text x="150" y="127" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">Single slot re-used throughout loop</text>
         </g>
       </svg>
     `

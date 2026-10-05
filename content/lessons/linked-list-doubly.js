@@ -37,39 +37,39 @@ window.LESSONS_CONTENT["linked-list-doubly"] = {
         <text x="350" y="28" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Doubly Linked List: ← prev | next →</text>
         
         <g transform="translate(50, 55)">
-          <text x="50" y="-5" fill="#10B981" font-size="11" font-weight="bold">HEAD</text>
-          <rect x="0" y="0" width="100" height="60" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="2" rx="8"/>
+          <text x="50" y="-5" fill="#34d399" font-size="11" font-weight="bold">HEAD</text>
+          <rect x="0" y="0" width="100" height="60" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="8"/>
           <text x="50" y="20" fill="var(--text-muted)" font-size="9" text-anchor="middle">prev: null</text>
           <text x="50" y="38" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">10</text>
           <text x="50" y="54" fill="var(--text-muted)" font-size="9" text-anchor="middle">next →</text>
         </g>
         
         <line x1="155" y1="78" x2="195" y2="78" stroke="var(--accent-primary)" stroke-width="2" marker-end="url(#dll-arrow)"/>
-        <line x1="195" y1="92" x2="155" y2="92" stroke="#F59E0B" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
+        <line x1="195" y1="92" x2="155" y2="92" stroke="#9a642b" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
         
         <g transform="translate(200, 55)">
-          <rect x="0" y="0" width="100" height="60" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="8"/>
+          <rect x="0" y="0" width="100" height="60" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="8"/>
           <text x="50" y="20" fill="var(--text-muted)" font-size="9" text-anchor="middle">← prev</text>
           <text x="50" y="38" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">20</text>
           <text x="50" y="54" fill="var(--text-muted)" font-size="9" text-anchor="middle">next →</text>
         </g>
         
         <line x1="305" y1="78" x2="345" y2="78" stroke="var(--accent-primary)" stroke-width="2" marker-end="url(#dll-arrow)"/>
-        <line x1="345" y1="92" x2="305" y2="92" stroke="#F59E0B" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
+        <line x1="345" y1="92" x2="305" y2="92" stroke="#9a642b" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
         
         <g transform="translate(350, 55)">
-          <rect x="0" y="0" width="100" height="60" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="2" rx="8"/>
+          <rect x="0" y="0" width="100" height="60" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="8"/>
           <text x="50" y="20" fill="var(--text-muted)" font-size="9" text-anchor="middle">← prev</text>
           <text x="50" y="38" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">30</text>
           <text x="50" y="54" fill="var(--text-muted)" font-size="9" text-anchor="middle">next →</text>
         </g>
         
         <line x1="455" y1="78" x2="495" y2="78" stroke="var(--accent-primary)" stroke-width="2" marker-end="url(#dll-arrow)"/>
-        <line x1="495" y1="92" x2="455" y2="92" stroke="#F59E0B" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
+        <line x1="495" y1="92" x2="455" y2="92" stroke="#9a642b" stroke-width="2" marker-end="url(#dll-arrow-prev)"/>
         
         <g transform="translate(500, 55)">
-          <text x="50" y="-5" fill="#EF4444" font-size="11" font-weight="bold">TAIL</text>
-          <rect x="0" y="0" width="100" height="60" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="2" rx="8"/>
+          <text x="50" y="-5" fill="#f87171" font-size="11" font-weight="bold">TAIL</text>
+          <rect x="0" y="0" width="100" height="60" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="8"/>
           <text x="50" y="20" fill="var(--text-muted)" font-size="9" text-anchor="middle">← prev</text>
           <text x="50" y="38" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">40</text>
           <text x="50" y="54" fill="var(--text-muted)" font-size="9" text-anchor="middle">next: null</text>
@@ -77,9 +77,9 @@ window.LESSONS_CONTENT["linked-list-doubly"] = {
         
         <g transform="translate(50, 140)">
           <rect width="600" height="40" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="16" fill="#10B981" font-size="12" font-weight="bold">Remove known node → O(1)</text>
+          <text x="20" y="16" fill="#34d399" font-size="12" font-weight="bold">Remove known node → O(1)</text>
           <text x="20" y="32" fill="var(--text-secondary)" font-size="11">With prev pointer, no need to search for the preceding node.</text>
-          <text x="360" y="16" fill="#F59E0B" font-size="12" font-weight="bold">Trade-off: extra memory per node</text>
+          <text x="360" y="16" fill="#fbbf24" font-size="12" font-weight="bold">Trade-off: extra memory per node</text>
           <text x="360" y="32" fill="var(--text-secondary)" font-size="11">Each node stores an additional prev pointer.</text>
         </g>
         
@@ -88,7 +88,7 @@ window.LESSONS_CONTENT["linked-list-doubly"] = {
             <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-primary)"/>
           </marker>
           <marker id="dll-arrow-prev" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#F59E0B"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#9a642b"/>
           </marker>
         </defs>
       </svg>

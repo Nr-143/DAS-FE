@@ -6,7 +6,6 @@
  * - Vector SVG Icons Library (Task 2: No Emojis, currentColor adaptive, Lucide vectors)
  * - Decoupled content modules (window.LESSONS_CONTENT)
  * - Definition-Style Format & Interactive Big-O Explorer
- * - DB-Stored Handwritten Notes (/api/notes/:topicId)
  * - Concept & Questions Two-Tab Split with URL State Sync
  * - Full-Width Responsive Layout (75ch paragraph readable max-width)
  */
@@ -37,109 +36,423 @@
   };
 
   /* ────────── Constants ────────── */
-  const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress';
-  const STORAGE_KEY_NOTES    = 'dsa-tracker-notes';
-  const STORAGE_KEY_THEME    = 'dsa-tracker-theme';
-  const API_BASE             = (window.ENV && window.ENV.API_BASE_URL) || 'http://localhost:3001/api';
-  const TOAST_DURATION       = 2400;
+  const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress-v2';
+  const STORAGE_KEY_THEME = 'dsa-tracker-theme';
+  const API_BASE = (window.ENV && window.ENV.API_BASE_URL) || 'http://localhost:3001/api';
+  const GOOGLE_CLIENT_ID = (window.ENV && window.ENV.GOOGLE_CLIENT_ID) || '';
+  const TOAST_DURATION = 2400;
 
   /* ────────── DOM Elements ────────── */
-  const $main          = document.getElementById('main-content');
-  const $progressText  = document.getElementById('progress-text');
-  const $progressFill  = document.getElementById('progress-fill');
-  const $progressBar   = document.getElementById('progress-bar');
-  const $toast         = document.getElementById('toast');
+  const $main = document.getElementById('main-content');
+  const $progressText = document.getElementById('progress-text');
+  const $progressFill = document.getElementById('progress-fill');
+  const $progressBar = document.getElementById('progress-bar');
+  const $toast = document.getElementById('toast');
 
   // Sidebar
-  const $sidebar          = document.getElementById('sidebar');
-  const $sidebarNav       = document.getElementById('sidebar-nav');
-  const $sidebarOverlay   = document.getElementById('sidebar-overlay');
+  const $sidebar = document.getElementById('sidebar');
+  const $sidebarNav = document.getElementById('sidebar-nav');
+  const $sidebarOverlay = document.getElementById('sidebar-overlay');
   const $btnSidebarToggle = document.getElementById('sidebar-toggle-btn');
-  const $btnSidebarClose  = document.getElementById('sidebar-close');
+  const $btnSidebarClose = document.getElementById('sidebar-close');
 
   // Theme
-  const $btnTheme  = document.getElementById('btn-theme');
+  const $btnTheme = document.getElementById('btn-theme');
   const $themeIcon = document.getElementById('theme-icon');
 
-  // Notes Drawer
-  const $btnNotes      = document.getElementById('btn-notes');
-  const $notesPanel    = document.getElementById('notes-panel');
-  const $notesOverlay  = document.getElementById('notes-overlay');
-  const $btnNotesClose = document.getElementById('btn-notes-close');
-  const $notesTextarea = document.getElementById('notes-textarea');
-
   // Export & Import Modals
-  const $btnExport      = document.getElementById('btn-export');
-  const $modalExport    = document.getElementById('modal-export-overlay');
+  const $btnExport = document.getElementById('btn-export');
+  const $modalExport = document.getElementById('modal-export-overlay');
   const $exportTextarea = document.getElementById('export-textarea');
-  const $btnExportCopy  = document.getElementById('btn-export-copy');
+  const $btnExportCopy = document.getElementById('btn-export-copy');
   const $btnExportClose = document.getElementById('btn-export-close');
 
-  const $btnImport      = document.getElementById('btn-import');
-  const $modalImport    = document.getElementById('modal-import-overlay');
+  const $btnImport = document.getElementById('btn-import');
+  const $modalImport = document.getElementById('modal-import-overlay');
   const $importTextarea = document.getElementById('import-textarea');
   const $btnImportApply = document.getElementById('btn-import-apply');
   const $btnImportClose = document.getElementById('btn-import-close');
 
   // Reset & Header Logo
-  const $btnReset   = document.getElementById('btn-reset');
+  const $btnReset = document.getElementById('btn-reset');
   const $headerLogo = document.getElementById('header-logo');
 
   // Mobile Hamburger
-  const $hamburger     = document.getElementById('hamburger-btn');
+  const $hamburger = document.getElementById('hamburger-btn');
   const $headerActions = document.getElementById('header-actions');
 
-  /* ────────── State ────────── */
+  /* ────────── Auth & Progress Sync State ────────── */
+  const _storedToken = localStorage.getItem('dsa_access_token') || sessionStorage.getItem('dsa_access_token');
+  const _storedUserRaw = localStorage.getItem('dsa_user');
+  let _storedUser = null;
+  try {
+    if (_storedUserRaw) _storedUser = JSON.parse(_storedUserRaw);
+  } catch (e) {}
+  const _hasSession = localStorage.getItem('dsa_has_session') === 'true';
+
+  let authState = {
+    user: _storedUser,
+    accessToken: _storedToken || null,
+    isLoggedIn: !!(_storedToken && _hasSession)
+  };
+
+  let pendingAction = null;
+  let cooldownTimerInterval = null;
+
+  /* ────────── App State ────────── */
   let topicsData = [];
   let progressMap = {};
-  let justUnlockedIds = new Set();
-  let currentView = 'grid';
+  let currentView = 'grid'; // 'grid' | 'lesson'
   let currentTopicId = null;
-  let activeTab = 'concept';
-  let activeNotationId = 'o-1';
+  let activeTab = 'concept'; // 'concept' | 'questions'
+  let justUnlockedIds = new Set();
+  let activeNotationId = null;
   let scrollObserver = null;
+
+  /* ────────────────────────────────────────────
+     AUTHENTICATION & API CLIENT WRAPPER
+  ──────────────────────────────────────────── */
+  async function fetchWithAuth(url, options = {}) {
+    const opts = { ...options };
+    opts.headers = opts.headers || {};
+    opts.credentials = 'include'; // Include refresh cookie
+
+    if (authState.accessToken) {
+      opts.headers['Authorization'] = `Bearer ${authState.accessToken}`;
+    }
+
+    if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(opts.body);
+    }
+
+    const res = await fetch(url, opts);
+
+    if (res.status === 401) {
+      let body = null;
+      try {
+        body = await res.clone().json();
+      } catch (e) { }
+
+      // Section 3 & 4 contract: AUTH_TOKEN_REQUIRED
+      if (body && body.error && body.error.code === 'AUTH_TOKEN_REQUIRED') {
+        clearAuthState();
+        openLoginModal('Log in to save your progress');
+        throw new Error('AUTH_TOKEN_REQUIRED');
+      }
+    }
+
+    return res;
+  }
+
+  function clearAuthState() {
+    authState.user = null;
+    authState.accessToken = null;
+    authState.isLoggedIn = false;
+    localStorage.removeItem('dsa_access_token');
+    localStorage.removeItem('dsa_user');
+    localStorage.removeItem('dsa_has_session');
+    sessionStorage.removeItem('dsa_access_token');
+    progressMap = {};
+    if (topicsData && topicsData.length > 0) {
+      topicsData.forEach(t => { progressMap[t.id] = false; });
+    }
+    saveProgress();
+    renderHeaderAuthUI();
+    render();
+  }
+
+  async function initAuthSession() {
+    const hasSessionFlag = localStorage.getItem('dsa_has_session') === 'true';
+    const tokenExists = !!(localStorage.getItem('dsa_access_token') || sessionStorage.getItem('dsa_access_token'));
+
+    if (!hasSessionFlag && !tokenExists) {
+      clearAuthState();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        authState.accessToken = data.accessToken;
+        if (data.user) {
+          authState.user = data.user;
+          localStorage.setItem('dsa_user', JSON.stringify(data.user));
+        }
+        authState.isLoggedIn = true;
+        localStorage.setItem('dsa_access_token', data.accessToken);
+        localStorage.setItem('dsa_has_session', 'true');
+        renderHeaderAuthUI();
+        await syncProgressWithServer();
+      } else if (authState.accessToken) {
+        // Access token persists in localStorage, sync progress directly
+        await syncProgressWithServer();
+      } else {
+        clearAuthState();
+      }
+    } catch (err) {
+      if (authState.accessToken) {
+        await syncProgressWithServer();
+      } else {
+        clearAuthState();
+      }
+    }
+  }
+
+  async function syncProgressWithServer() {
+    if (!authState.isLoggedIn) return;
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/progress`);
+      const data = await res.json();
+      if (data.completedTopicIds && Array.isArray(data.completedTopicIds)) {
+        const completedSet = new Set(data.completedTopicIds);
+        topicsData.forEach(t => {
+          progressMap[t.id] = completedSet.has(t.id);
+        });
+        saveProgress();
+        render();
+      }
+    } catch (err) {
+      console.warn('Could not sync progress with server:', err);
+    }
+  }
+
+  async function handleTopicCompletionToggle(topicId, forcedState = null) {
+    const currentState = isCompleted(topicId);
+    const nextState = forcedState !== null ? forcedState : !currentState;
+
+    if (!authState.isLoggedIn) {
+      openLoginModal('Log in with Google to save your progress');
+      pendingAction = { type: 'toggle_topic', topicId, intendedState: nextState };
+      return;
+    }
+
+    // Optimistic UI update
+    progressMap[topicId] = nextState;
+    if (nextState) {
+      justUnlockedIds.add(topicId);
+    }
+    saveProgress();
+    render();
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/progress/${topicId}`, {
+        method: 'PATCH',
+        body: { completed: nextState }
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save progress');
+      }
+      showToast(nextState ? 'Progress saved to account!' : 'Topic marked incomplete.');
+    } catch (err) {
+      // Revert optimistic update if API call failed
+      progressMap[topicId] = currentState;
+      saveProgress();
+      render();
+      showToast('Could not save progress to account. Please check network.', 'warning');
+    }
+  }
+
+  function renderHeaderAuthUI() {
+    const $container = document.getElementById('header-auth-container');
+    if (!$container) return;
+
+    if (authState.isLoggedIn && !authState.user) {
+      // Optimistic state: token exists but refresh not done yet
+      $container.innerHTML = `<span style="font-size:0.82rem;color:var(--text-secondary);padding:4px 10px;">Loading...</span>`;
+      return;
+    }
+    if (authState.isLoggedIn && authState.user) {
+      $container.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:20px;background:var(--bg-surface-hover);border:1px solid var(--border-default);font-size:0.82rem;">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--accent-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">
+            ${(authState.user.email || 'U')[0].toUpperCase()}
+          </span>
+          <span style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(authState.user.email)}</span>
+          <button id="btn-logout" class="btn btn--sm" style="padding:2px 8px;font-size:0.75rem;margin-left:4px;" title="Log out">Log out</button>
+        </div>
+      `;
+      const logoutBtn = $container.querySelector('#btn-logout');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+      }
+    } else {
+      $container.innerHTML = `
+        <button id="btn-header-login" class="btn btn--primary" style="padding:6px 14px;font-size:0.84rem;font-weight:600;">Log in</button>
+      `;
+      const loginBtn = $container.querySelector('#btn-header-login');
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => openLoginModal('Log in to save your progress'));
+      }
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (e) { }
+    clearAuthState();
+    showToast('Logged out successfully.');
+    render();
+  }
+
+  function openLoginModal(subtext) {
+    const $modal = document.getElementById('modal-login-overlay');
+    const $subtext = document.getElementById('login-modal-subtext');
+    const $banner = document.getElementById('auth-error-banner');
+
+    if (!$modal) return;
+    if ($subtext && subtext) $subtext.textContent = subtext;
+    if ($banner) $banner.style.display = 'none';
+
+    $modal.classList.add('modal-overlay--visible');
+
+    // Initialize Google GSI SDK once & render official Google button
+    initGoogleAuth();
+  }
+
+  function closeLoginModal() {
+    const $modal = document.getElementById('modal-login-overlay');
+    if ($modal) $modal.classList.remove('modal-overlay--visible');
+  }
 
   /* ────────────────────────────────────────────
      BOOT
   ──────────────────────────────────────────── */
-  async function boot() {
-    initTheme();
-    initNotes();
-    parseUrlParams();
-    await loadTopics();
-    loadProgress();
-    render();
-    bindGlobalEvents();
+  async function loadClientConfig() {
+    if (window.ENV && window.ENV.GOOGLE_CLIENT_ID) return;
+    try {
+      const res = await fetch(`${API_BASE}/config`);
+      if (res.ok) {
+        const data = await res.json();
+        window.ENV = window.ENV || {};
+        if (data.googleClientId) window.ENV.GOOGLE_CLIENT_ID = data.googleClientId;
+      }
+    } catch (e) {
+      console.warn('Could not fetch server config:', e.message);
+    }
   }
 
-  function parseUrlParams() {
+  /* ────────────────────────────────────────────
+     CLIENT-SIDE ROUTER & HISTORY STATE
+  ──────────────────────────────────────────── */
+  function updateRouterState(view, topicId = null, tab = null, pushHistory = true) {
+    const url = new URL(window.location.href);
+    
+    if (view === 'lesson' && topicId) {
+      url.searchParams.set('topic', topicId);
+      url.searchParams.set('tab', tab || activeTab || 'concept');
+    } else {
+      url.searchParams.delete('topic');
+      url.searchParams.delete('tab');
+    }
+
+    const state = { view, topicId, tab: tab || activeTab };
+    if (pushHistory) {
+      if (window.location.href !== url.toString()) {
+        window.history.pushState(state, '', url.toString());
+      }
+    } else {
+      window.history.replaceState(state, '', url.toString());
+    }
+  }
+
+  function handleRouteFromUrl(pushHistory = false) {
     const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    const topicParam = params.get('topic');
     const tabParam = params.get('tab');
+
     if (tabParam === 'questions' || tabParam === 'concept') {
       activeTab = tabParam;
+    } else {
+      activeTab = 'concept';
     }
+
+    // Explicit request for grid view (e.g., ?view=grid)
+    if (viewParam === 'grid') {
+      currentView = 'grid';
+      currentTopicId = null;
+      updateRouterState('grid', null, null, pushHistory);
+      return;
+    }
+
+    // Explicit topic requested in URL
+    if (topicParam && topicsData.some(t => t.id === topicParam)) {
+      if (isTopicUnlocked(topicParam)) {
+        currentView = 'lesson';
+        currentTopicId = topicParam;
+        updateRouterState('lesson', topicParam, activeTab, pushHistory);
+        return;
+      } else {
+        const topic = topicsData.find(t => t.id === topicParam);
+        showToast(`Topic "${topic ? topic.title : topicParam}" is locked.`);
+      }
+    }
+
+    // Default: Open the first topic ("What is DSA?") directly
+    const defaultTopicId = (topicsData && topicsData.length > 0) ? topicsData[0].id : 'what-is-dsa';
+    currentView = 'lesson';
+    currentTopicId = defaultTopicId;
+    updateRouterState('lesson', defaultTopicId, activeTab, pushHistory);
   }
 
   function updateUrlTab(tab) {
     activeTab = tab;
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tab);
-    window.history.replaceState(null, '', url.toString());
+    if (currentView === 'lesson' && currentTopicId) {
+      updateRouterState('lesson', currentTopicId, tab, false);
+    }
+  }
+
+  async function boot() {
+    initTheme();
+    await loadClientConfig();
+    await loadTopics();
+    loadProgress();
+    bindGlobalEvents();
+    bindAuthModalEvents();
+    renderHeaderAuthUI();
+    await initAuthSession();
+
+    // Listen for browser Back & Forward navigation (popstate)
+    window.addEventListener('popstate', () => {
+      handleRouteFromUrl(false);
+      render();
+    });
+
+    // Parse route from current URL and render initial view
+    handleRouteFromUrl(false);
+    render();
   }
 
   async function loadTopics() {
     try {
-      const res = await fetch('data/topics.json');
+      const res = await fetch(`${API_BASE}/topics`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      topicsData = json.topics.sort((a, b) => a.order - b.order);
+      const rawTopics = json.topics || json.data || json;
+      topicsData = Array.isArray(rawTopics) ? rawTopics.sort((a, b) => a.order - b.order) : [];
     } catch (err) {
-      console.error('Failed to load topics:', err);
-      $main.innerHTML = `<p style="color:var(--text-secondary);text-align:center;margin-top:60px;">Could not load topic data. Make sure <code>data/topics.json</code> exists.</p>`;
+      console.warn('Backend topics fetch failed, falling back to local topics.json:', err.message);
+      try {
+        const fallbackRes = await fetch('data/topics.json');
+        const fallbackJson = await fallbackRes.json();
+        topicsData = fallbackJson.topics.sort((a, b) => a.order - b.order);
+      } catch (e) {
+        $main.innerHTML = `<p style="color:var(--text-secondary);text-align:center;margin-top:60px;">Could not load topic data.</p>`;
+      }
     }
   }
 
   function loadProgress() {
+    localStorage.removeItem('dsa-tracker-progress');
     const stored = localStorage.getItem(STORAGE_KEY_PROGRESS);
     if (stored) {
       try {
@@ -149,11 +462,8 @@
       }
     }
     topicsData.forEach(t => {
-      // Force unlock if the curriculum (topics.json) says it's completed
-      if (t.completed) {
-        progressMap[t.id] = true;
-      } else if (!(t.id in progressMap)) {
-        progressMap[t.id] = t.completed;
+      if (!(t.id in progressMap)) {
+        progressMap[t.id] = false;
       }
     });
     saveProgress();
@@ -165,6 +475,14 @@
 
   function isCompleted(topicId) {
     return !!progressMap[topicId];
+  }
+
+  function isTopicUnlocked(topicId) {
+    const globalIdx = topicsData.findIndex(t => t.id === topicId);
+    if (globalIdx <= 0) return true;
+    if (isCompleted(topicId)) return true;
+    const prevTopic = topicsData[globalIdx - 1];
+    return prevTopic ? isCompleted(prevTopic.id) : true;
   }
 
   function render() {
@@ -200,7 +518,7 @@
     levels.forEach(group => {
       const groupDiv = document.createElement('div');
       groupDiv.className = 'sidebar__group';
-      
+
       const totalInLevel = group.topics.length;
       const completedInLevel = group.topics.filter(t => isCompleted(t.id)).length;
       const hasUnlocked = completedInLevel > 0;
@@ -231,12 +549,17 @@
       group.topics.forEach(topic => {
         const completed = isCompleted(topic.id);
         const isActive = currentView === 'lesson' && currentTopicId === topic.id;
+        const globalIdx = topicsData.findIndex(t => t.id === topic.id);
+        const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
+        const isUnlocked = globalIdx === 0 || completed || (prevTopic && isCompleted(prevTopic.id));
 
         const item = document.createElement('a');
         item.className = 'sidebar__item';
         item.href = '#';
 
         if (completed) {
+          item.classList.add('sidebar__item--completed');
+        } else if (isUnlocked) {
           item.classList.add('sidebar__item--unlocked');
         } else {
           item.classList.add('sidebar__item--locked');
@@ -246,7 +569,7 @@
           item.classList.add('sidebar__item--active');
         }
 
-        const iconSvg = completed ? SVG_ICONS.checkCircle : SVG_ICONS.lock;
+        const iconSvg = completed ? SVG_ICONS.checkCircle : (isUnlocked ? SVG_ICONS.bookOpen : SVG_ICONS.lock);
 
         item.innerHTML = `
           <span class="sidebar__item-label">
@@ -258,7 +581,7 @@
 
         item.addEventListener('click', (e) => {
           e.preventDefault();
-          if (completed) {
+          if (isUnlocked) {
             openLesson(topic.id);
             closeSidebar();
           } else {
@@ -297,10 +620,10 @@
       const section = document.createElement('section');
       section.className = 'level-section';
       section.id = `level-${levelGroup.level}`;
-      
+
       const totalInLevel = levelGroup.topics.length;
       const completedInLevel = levelGroup.topics.filter(t => isCompleted(t.id)).length;
-      const hasUnlocked = completedInLevel > 0;
+      const hasUnlocked = levelGroup.level === 1 || completedInLevel > 0;
 
       const header = document.createElement('div');
       header.className = 'level-header';
@@ -329,15 +652,20 @@
       levelGroup.topics.forEach(topic => {
         const completed = isCompleted(topic.id);
         const justUnlocked = justUnlockedIds.has(topic.id);
+        const globalIdx = topicsData.findIndex(t => t.id === topic.id);
+        const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
+        const isUnlocked = globalIdx === 0 || completed || (prevTopic && isCompleted(prevTopic.id));
 
         const card = document.createElement('div');
         card.className = 'topic-card';
         card.id = `card-${topic.id}`;
-        card.setAttribute('role', completed ? 'button' : 'presentation');
-        card.setAttribute('tabindex', completed ? '0' : '-1');
+        card.setAttribute('role', isUnlocked ? 'button' : 'presentation');
+        card.setAttribute('tabindex', isUnlocked ? '0' : '-1');
 
         if (completed) {
           card.classList.add('topic-card--completed');
+        } else if (isUnlocked) {
+          card.classList.add('topic-card--unlocked');
         } else {
           card.classList.add('topic-card--locked');
         }
@@ -350,19 +678,19 @@
           }, { once: true });
         }
 
-        const statusClass = completed ? 'topic-card__status-icon--complete' : 'topic-card__status-icon--locked';
-        const iconSvg = completed ? SVG_ICONS.checkCircle : SVG_ICONS.lock;
+        const statusClass = completed ? 'topic-card__status-icon--complete' : (isUnlocked ? 'topic-card__status-icon--unlocked' : 'topic-card__status-icon--locked');
+        const iconSvg = completed ? SVG_ICONS.checkCircle : (isUnlocked ? SVG_ICONS.bookOpen : SVG_ICONS.lock);
 
         card.innerHTML = `
           <div class="topic-card__header">
             <span class="topic-card__order">${topic.order}</span>
-            <span class="topic-card__status-icon ${statusClass}" aria-label="${completed ? 'Completed' : 'Locked'}">${iconSvg}</span>
+            <span class="topic-card__status-icon ${statusClass}" aria-label="${completed ? 'Completed' : (isUnlocked ? 'Unlocked' : 'Locked')}">${iconSvg}</span>
           </div>
           <h3 class="topic-card__title">${escapeHtml(topic.title)}</h3>
           ${renderSubtopics(topic)}
         `;
 
-        if (completed) {
+        if (isUnlocked) {
           card.addEventListener('click', () => openLesson(topic.id));
           card.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLesson(topic.id); }
@@ -400,10 +728,16 @@
   /* ────────────────────────────────────────────
      LESSON PAGE RENDERER
   ──────────────────────────────────────────── */
-  function openLesson(topicId) {
+  function openLesson(topicId, tab = 'concept') {
+    if (!isTopicUnlocked(topicId)) {
+      showToast('Locked — complete previous topics first.');
+      return;
+    }
     currentView = 'lesson';
     currentTopicId = topicId;
+    activeTab = tab || 'concept';
     activeNotationId = 'o-1';
+    updateRouterState('lesson', topicId, activeTab, true);
     render();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -411,6 +745,7 @@
   function showGridView() {
     currentView = 'grid';
     currentTopicId = null;
+    updateRouterState('grid', null, null, true);
     render();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -418,6 +753,31 @@
   function renderLessonPage(topicId) {
     const content = window.LESSONS_CONTENT ? window.LESSONS_CONTENT[topicId] : null;
     const topic = topicsData.find(t => t.id === topicId);
+
+    if (!isTopicUnlocked(topicId)) {
+      const globalIdx = topicsData.findIndex(t => t.id === topicId);
+      const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
+      $main.innerHTML = `
+        <div class="lesson-page" style="text-align:center;padding:60px 20px;">
+          <div style="font-size:3.5rem;margin-bottom:16px;">🔒</div>
+          <h2 style="font-size:1.8rem;margin-bottom:12px;">Topic Locked</h2>
+          <p style="color:var(--text-secondary);max-width:500px;margin:0 auto 24px auto;line-height:1.6;">
+            "${escapeHtml(topic ? topic.title : 'This topic')}" is locked. Complete ${prevTopic ? `<strong>"${escapeHtml(prevTopic.title)}"</strong>` : 'the previous topic'} first to unlock it.
+          </p>
+          <button class="btn btn--primary" id="btn-lock-back" style="padding:10px 24px;font-weight:600;border-radius:20px;cursor:pointer;background:var(--accent-primary);color:#fff;border:none;">
+            ← Return to Roadmap
+          </button>
+        </div>
+      `;
+      const backBtn = document.getElementById('btn-lock-back');
+      if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          showGridView();
+        });
+      }
+      return;
+    }
 
     if (!content || !topic) {
       $main.innerHTML = `
@@ -457,13 +817,27 @@
     container.appendChild(breadcrumb);
 
     // 2. Header
+    const isTopicDone = isCompleted(topicId);
     const header = document.createElement('header');
     header.className = 'lesson-header';
     header.innerHTML = `
-      <h1 class="lesson-header__title">${escapeHtml(content.title)}</h1>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+        <h1 class="lesson-header__title" style="margin:0;">${escapeHtml(content.title)}</h1>
+        <button id="btn-toggle-completion" class="btn" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:9px 22px;font-weight:600;font-size:0.92rem;border-radius:20px;cursor:pointer;background:${isTopicDone ? 'rgba(16,185,129,0.18)' : 'var(--accent-primary)'};color:${isTopicDone ? '#10B981' : '#ffffff'};border:${isTopicDone ? '1px solid #10B981' : 'none'};box-shadow:${isTopicDone ? 'none' : '0 2px 10px rgba(108,99,255,0.35)'};transition:all 0.2s ease;">
+          <span style="display:flex;align-items:center;">${SVG_ICONS.checkCircle}</span>
+          <span>${isTopicDone ? 'Completed ✓' : 'Mark as Complete'}</span>
+        </button>
+      </div>
       <p class="lesson-header__summary">${escapeHtml(content.summary)}</p>
     `;
     container.appendChild(header);
+
+    const toggleBtn = header.querySelector('#btn-toggle-completion');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        handleTopicCompletionToggle(topicId);
+      });
+    }
 
     // 3. TABS BAR (Task 2 Vector Icons)
     const tabsBar = document.createElement('div');
@@ -502,6 +876,10 @@
     container.appendChild(panelConcept);
     container.appendChild(panelQuestions);
 
+    // 6. LESSON FOOTER (Completion Bar & Prev/Next Navigation)
+    const footer = renderLessonFooter(topicId);
+    container.appendChild(footer);
+
     $main.innerHTML = '';
     $main.appendChild(container);
 
@@ -539,9 +917,6 @@
     updateMiniToc(content, activeTab, container);
     setupScrollReveal(container, activeTab);
 
-    // Fetch & Render DB-Stored Notes
-    fetchAndRenderDbNotes(topicId);
-
     // Mount Interactive Stack/Queue Widget if present
     if (content.interactiveWidget) {
       mountInteractiveWidget(content);
@@ -554,9 +929,100 @@
   }
 
   /* ────────────────────────────────────────────
+     LESSON FOOTER (Status & Prev/Next Nav)
+  ──────────────────────────────────────────── */
+  function renderLessonFooter(topicId) {
+    const currentIndex = topicsData.findIndex(t => t.id === topicId);
+    const currentTopic = topicsData[currentIndex];
+    const prevTopic = currentIndex > 0 ? topicsData[currentIndex - 1] : null;
+    const nextTopic = currentIndex >= 0 && currentIndex < topicsData.length - 1 ? topicsData[currentIndex + 1] : null;
+    const isTopicDone = isCompleted(topicId);
+    const isNextUnlocked = nextTopic ? isTopicUnlocked(nextTopic.id) : false;
+
+    const footer = document.createElement('footer');
+    footer.className = 'lesson-footer';
+    footer.style.cssText = 'margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border-default); display: flex; flex-direction: column; gap: 20px;';
+
+    footer.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--bg-surface); padding:18px 24px; border-radius:14px; border:1px solid var(--border-default); box-shadow:var(--shadow-sm);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-weight:600; color:var(--text-primary); font-size:0.95rem;">Topic Completion:</span>
+          <span class="badge" style="padding:6px 14px; border-radius:20px; font-size:0.88rem; font-weight:600; display:inline-flex; align-items:center; gap:6px; background:${isTopicDone ? 'rgba(16,185,129,0.15)' : 'rgba(234,179,8,0.15)'}; color:${isTopicDone ? '#10B981' : '#EAB308'}; border: 1px solid ${isTopicDone ? 'rgba(16,185,129,0.3)' : 'rgba(234,179,8,0.3)'};">
+            ${isTopicDone ? SVG_ICONS.checkCircle + ' Completed' : SVG_ICONS.bookOpen + ' In Progress'}
+          </span>
+        </div>
+        <button id="btn-toggle-completion-bottom" class="btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 22px; font-weight:600; font-size:0.92rem; border-radius:20px; cursor:pointer; background:${isTopicDone ? 'rgba(16,185,129,0.18)' : 'var(--accent-primary)'}; color:${isTopicDone ? '#10B981' : '#ffffff'}; border:${isTopicDone ? '1px solid #10B981' : 'none'}; box-shadow:${isTopicDone ? 'none' : '0 2px 10px rgba(108,99,255,0.35)'}; transition:all 0.2s ease;">
+          <span style="display:flex;align-items:center;">${SVG_ICONS.checkCircle}</span>
+          <span>${isTopicDone ? 'Completed ✓ (Click to unmark)' : 'Mark as Complete'}</span>
+        </button>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:30px;">
+        ${prevTopic ? `
+          <button id="btn-prev-topic" class="btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-weight:600; border-radius:10px; cursor:pointer; background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border-default);">
+            ← Previous: ${escapeHtml(prevTopic.title)}
+          </button>
+        ` : '<div></div>'}
+        ${nextTopic ? `
+          <button id="btn-next-topic" class="btn ${isNextUnlocked ? 'btn--primary' : ''}" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-weight:600; border-radius:10px; cursor:${isNextUnlocked ? 'pointer' : 'not-allowed'}; background:${isNextUnlocked ? 'var(--accent-primary)' : 'var(--bg-surface)'}; color:${isNextUnlocked ? '#ffffff' : 'var(--text-muted)'}; border:${isNextUnlocked ? 'none' : '1px solid var(--border-default)'}; opacity:${isNextUnlocked ? '1' : '0.65'}; box-shadow:${isNextUnlocked ? '0 2px 8px rgba(108,99,255,0.3)' : 'none'};">
+            Next: ${escapeHtml(nextTopic.title)} ${isNextUnlocked ? '→' : '🔒'}
+          </button>
+        ` : '<div></div>'}
+      </div>
+    `;
+
+    // Bindings
+    const bottomToggle = footer.querySelector('#btn-toggle-completion-bottom');
+    if (bottomToggle) {
+      bottomToggle.addEventListener('click', () => {
+        handleTopicCompletionToggle(topicId);
+      });
+    }
+
+    const prevBtn = footer.querySelector('#btn-prev-topic');
+    if (prevBtn && prevTopic) {
+      prevBtn.addEventListener('click', () => {
+        openLesson(prevTopic.id);
+      });
+    }
+
+    const nextBtn = footer.querySelector('#btn-next-topic');
+    if (nextBtn && nextTopic) {
+      nextBtn.addEventListener('click', () => {
+        if (isNextUnlocked) {
+          openLesson(nextTopic.id);
+        } else {
+          showToast(`Locked — complete "${currentTopic ? currentTopic.title : 'this topic'}" first to unlock ${nextTopic.title}.`);
+        }
+      });
+    }
+
+    return footer;
+  }
+
+  /* ────────────────────────────────────────────
+     CONCEPT PANEL SECTIONS RENDERER
+  ──────────────────────────────────────────── */
+  /* ────────────────────────────────────────────
      CONCEPT PANEL SECTIONS RENDERER
   ──────────────────────────────────────────── */
   function renderConceptPanelSections(content, panel, topicId) {
+    let sectionCount = 1;
+
+    // 0. Why This Actually Matters (Motivation Hook)
+    if (content.whyMatters) {
+      const whySec = document.createElement('section');
+      whySec.className = 'lesson-section reveal-on-scroll';
+      whySec.id = 'section-why-matters';
+      whySec.innerHTML = `
+        <h2 class="lesson-section__title">Why This Actually Matters</h2>
+        <div class="lesson-section__body" style="font-size:0.98rem; line-height:1.65; color:var(--text-primary); background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default); border-left:4px solid var(--accent-primary);">
+          <p style="margin:0;">${content.whyMatters}</p>
+        </div>
+      `;
+      panel.appendChild(whySec);
+    }
+
     // 1. Definition-Style List (Task 2 Format)
     if (content.definitions && content.definitions.length > 0) {
       const defSection = document.createElement('section');
@@ -571,7 +1037,7 @@
       `).join('');
 
       defSection.innerHTML = `
-        <h2 class="lesson-section__title">1. Key Definitions</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Key Definitions</h2>
         <div class="def-list">${defCards}</div>
         <div class="combined-flow-box">
           <div class="combined-flow-box__title">${SVG_ICONS.zap} How it all works together</div>
@@ -588,7 +1054,7 @@
       explorerSection.id = 'section-interactive-notations';
 
       explorerSection.innerHTML = `
-        <h2 class="lesson-section__title">2. Interactive Big-O Explorer</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Interactive Big-O Explorer</h2>
         <p style="color:var(--text-secondary);font-size:0.92rem;">Select a Big-O notation below to explore its basic flow, real-world example, code snippet, growth chart, and visual animation:</p>
 
         <div class="notation-explorer">
@@ -615,14 +1081,47 @@
       const workedSec = document.createElement('section');
       workedSec.className = 'lesson-section reveal-on-scroll';
       workedSec.id = 'section-worked-example';
+
+      let selfCheckHtml = '';
+      if (content.workedExample.selfCheckPrompt) {
+        selfCheckHtml = `
+          <div class="self-check-card" style="margin-top: 18px; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px;">
+            <div style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary); font-size: 0.95rem;">
+              ${escapeHtml(content.workedExample.selfCheckPrompt)}
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+              <button type="button" class="btn btn--secondary btn-self-check" data-choice="linear" style="font-size: 0.88rem; padding: 6px 14px; cursor: pointer;">Linear Search</button>
+              <button type="button" class="btn btn--primary btn-self-check" data-choice="binary" style="font-size: 0.88rem; padding: 6px 14px; cursor: pointer;">Binary Search</button>
+            </div>
+            <div class="self-check-explanation" style="display: none; padding: 12px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; margin-top: 8px;">
+              💡 <strong>${content.workedExample.selfCheckExplanation}</strong>
+            </div>
+          </div>
+        `;
+      }
+
       workedSec.innerHTML = `
-        <h2 class="lesson-section__title">3. Worked Example</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Worked Example</h2>
         <div class="lesson-section__body">
           <p>${content.workedExample.primitiveText || content.workedExample.title}</p>
           ${content.workedExample.referenceText ? `<p>${content.workedExample.referenceText}</p>` : ''}
+          ${selfCheckHtml}
         </div>
       `;
       panel.appendChild(workedSec);
+
+      if (content.workedExample.selfCheckPrompt) {
+        setTimeout(() => {
+          workedSec.querySelectorAll('.btn-self-check').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const expEl = workedSec.querySelector('.self-check-explanation');
+              if (expEl) {
+                expEl.style.display = 'block';
+              }
+            });
+          });
+        }, 0);
+      }
     }
 
     // 4. Visual Diagram / Combined Chart
@@ -633,7 +1132,7 @@
       const svgContent = content.visual ? content.visual.diagramSvg : content.combinedChartSvg;
       const captionText = content.visual ? content.visual.caption : "Figure: Combined growth curves for all seven Big-O complexity classes.";
       visualSec.innerHTML = `
-        <h2 class="lesson-section__title">4. Visual Diagram & Comparison</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Visual Diagram & Comparison</h2>
         <div class="diagram-container">
           ${svgContent}
           <div class="diagram-caption">${escapeHtml(captionText)}</div>
@@ -651,7 +1150,7 @@
       if (content.interactiveWidget === 'stack') widgetTitle = 'Interactive Stack Widget';
       else if (content.interactiveWidget === 'queue') widgetTitle = 'Interactive Queue Widget';
       else widgetTitle = 'Interactive Algorithm Visualizer';
-      
+
       widgetSec.innerHTML = `
         <h2 class="lesson-section__title">${SVG_ICONS.film} ${widgetTitle}</h2>
         <div id="widget-container" class="widget-container"></div>
@@ -665,7 +1164,7 @@
       codeSec.className = 'lesson-section reveal-on-scroll';
       codeSec.id = 'section-code-snippet';
       codeSec.innerHTML = `
-        <h2 class="lesson-section__title">5. Code Snippet</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Code Snippet</h2>
         <pre class="code-block"><code>${content.codeSnippet}</code></pre>
       `;
       panel.appendChild(codeSec);
@@ -678,7 +1177,7 @@
       compSec.id = 'section-complexity-notes';
       const items = content.complexityNotes.map(n => `<li>${n}</li>`).join('');
       compSec.innerHTML = `
-        <h2 class="lesson-section__title">6. Complexity Notes</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Complexity Notes</h2>
         <div class="lesson-section__body"><ul>${items}</ul></div>
       `;
       panel.appendChild(compSec);
@@ -696,21 +1195,57 @@
         </div>
       `).join('');
       mistakesSec.innerHTML = `
-        <h2 class="lesson-section__title">7. Common Mistakes</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. Common Mistakes</h2>
         <div class="lesson-section__body">${cards}</div>
       `;
       panel.appendChild(mistakesSec);
     }
 
-    // 8. DB Handwritten Notes Card
-    const dbNotesSec = document.createElement('section');
-    dbNotesSec.className = 'lesson-section reveal-on-scroll';
-    dbNotesSec.id = 'section-handwritten-notes';
-    dbNotesSec.innerHTML = `
-      <h2 class="lesson-section__title">8. Handwritten Notes (Backend DB)</h2>
-      <div id="db-notes-container-${topicId}" class="db-notes-card__loading">Loading handwritten notes from database...</div>
-    `;
-    panel.appendChild(dbNotesSec);
+    // 8. Real-World DSA You Already Use
+    if (content.realWorldDsa && content.realWorldDsa.length > 0) {
+      const rwSec = document.createElement('section');
+      rwSec.className = 'lesson-section reveal-on-scroll';
+      rwSec.id = 'section-real-world-dsa';
+
+      const items = content.realWorldDsa.map(rw => `
+        <div class="def-card" style="margin-bottom: 12px;">
+          <div class="def-term" style="display:flex; align-items:center; gap:8px;">
+            ${SVG_ICONS.zap || ''} <strong>${escapeHtml(rw.item)}</strong> &rarr; <span style="color:var(--accent-primary); font-weight:700;">${escapeHtml(rw.structure)}</span>
+          </div>
+          <div class="def-desc" style="color:var(--text-secondary); margin-top:4px;">
+            ${escapeHtml(rw.note)}
+          </div>
+        </div>
+      `).join('');
+
+      rwSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. Real-World DSA You Already Use</h2>
+        <p style="color:var(--text-secondary); margin-bottom:14px; font-size:0.92rem;">
+          Here is how familiar everyday tools map to data structures and algorithms on your roadmap — you'll build simplified versions of several of these yourself as you go:
+        </p>
+        <div class="def-list">${items}</div>
+      `;
+      panel.appendChild(rwSec);
+    }
+
+    // 9. A Bit of History
+    if (content.historyFact) {
+      const histSec = document.createElement('section');
+      histSec.className = 'lesson-section reveal-on-scroll';
+      histSec.id = 'section-history-fact';
+      histSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. A Bit of History</h2>
+        <div class="combined-flow-box" style="border-left: 4px solid var(--accent-primary);">
+          <div class="combined-flow-box__title" style="display:flex; align-items:center; gap:8px;">
+            ${SVG_ICONS.bookOpen || ''} <span>Did you know?</span>
+          </div>
+          <div style="color:var(--text-primary); margin-top:6px; line-height:1.6;">
+            ${escapeHtml(content.historyFact)}
+          </div>
+        </div>
+      `;
+      panel.appendChild(histSec);
+    }
   }
 
   /* ────────────────────────────────────────────
@@ -1037,13 +1572,20 @@
       activeWidgetCleanup();
       activeWidgetCleanup = null;
     }
+    if (activeAlgoTimer) {
+      clearInterval(activeAlgoTimer);
+      activeAlgoTimer = null;
+    }
     const container = document.getElementById('widget-container');
     if (!container || !content.interactiveWidget) return;
 
-    if (content.interactiveWidget === 'stack') {
+    const wType = content.interactiveWidget;
+    if (wType === 'stack') {
       activeWidgetCleanup = mountStackWidget(container);
-    } else if (content.interactiveWidget === 'queue') {
+    } else if (wType === 'queue') {
       activeWidgetCleanup = mountQueueWidget(container);
+    } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
+      renderAlgoVisualizer(container, wType);
     }
   }
 
@@ -1276,47 +1818,6 @@
   }
 
   /* ────────────────────────────────────────────
-     FETCH DB NOTES
-  ──────────────────────────────────────────── */
-  async function fetchAndRenderDbNotes(topicId) {
-    const targetEl = document.getElementById(`db-notes-container-${topicId}`);
-    if (!targetEl) return;
-
-    try {
-      const res = await fetch(`${API_BASE}/notes/${topicId}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-
-      if (json.success && json.data && json.data.html) {
-        const dateStr = json.data.updatedAt ? new Date(json.data.updatedAt).toLocaleDateString() : 'Recently';
-        targetEl.className = 'db-notes-card';
-        targetEl.innerHTML = `
-          <div class="db-notes-card__header">
-            <span class="db-notes-card__title">${SVG_ICONS.penTool} Handwritten Notes (Synced from DB)</span>
-            <span class="db-notes-card__timestamp">Last updated: ${dateStr}</span>
-          </div>
-          <div class="db-notes-card__content">${json.data.html}</div>
-        `;
-      } else {
-        targetEl.className = 'db-notes-card__empty';
-        targetEl.innerHTML = `
-          <div style="color:var(--accent-primary);">${SVG_ICONS.penTool}</div>
-          <div style="font-weight:700;color:var(--text-primary);">Handwritten notes coming soon</div>
-          <div style="font-size:0.82rem;color:var(--text-muted);">Notes added after LinkedIn post will appear here.</div>
-        `;
-      }
-    } catch (err) {
-      console.warn('Could not fetch DB notes:', err);
-      targetEl.className = 'db-notes-card__empty';
-      targetEl.innerHTML = `
-        <div style="color:var(--accent-primary);">${SVG_ICONS.penTool}</div>
-        <div style="font-weight:700;color:var(--text-primary);">Handwritten notes coming soon</div>
-        <div style="font-size:0.82rem;color:var(--text-muted);">Notes added after LinkedIn post will appear here.</div>
-      `;
-    }
-  }
-
-  /* ────────────────────────────────────────────
      TASK 1: COMPACT SINGLE-ROW MINI TOC STRIP RENDERER
   ──────────────────────────────────────────── */
   function updateMiniToc(content, tab, container) {
@@ -1328,6 +1829,7 @@
 
     if (tab === 'concept') {
       tocHTML += `
+        ${content.whyMatters ? '<li><a href="#section-why-matters" class="lesson-toc__link">Why This Actually Matters</a></li>' : ''}
         ${content.definitions ? '<li><a href="#section-definitions" class="lesson-toc__link">Key Definitions</a></li>' : ''}
         ${content.notations ? '<li><a href="#section-interactive-notations" class="lesson-toc__link">Big-O Explorer</a></li>' : ''}
         ${content.workedExample ? '<li><a href="#section-worked-example" class="lesson-toc__link">Worked Example</a></li>' : ''}
@@ -1336,7 +1838,8 @@
         ${content.codeSnippet ? '<li><a href="#section-code-snippet" class="lesson-toc__link">Code Snippet</a></li>' : ''}
         ${content.complexityNotes ? '<li><a href="#section-complexity-notes" class="lesson-toc__link">Complexity Notes</a></li>' : ''}
         ${content.commonMistakes ? '<li><a href="#section-common-mistakes" class="lesson-toc__link">Common Mistakes</a></li>' : ''}
-        <li><a href="#section-handwritten-notes" class="lesson-toc__link">Handwritten Notes (DB)</a></li>
+        ${content.realWorldDsa ? '<li><a href="#section-real-world-dsa" class="lesson-toc__link">Real-World DSA You Already Use</a></li>' : ''}
+        ${content.historyFact ? '<li><a href="#section-history-fact" class="lesson-toc__link">A Bit of History</a></li>' : ''}
       `;
     } else {
       tocHTML += `
@@ -1432,32 +1935,11 @@
     applyTheme(current === 'dark' ? 'light' : 'dark');
   }
 
-  function initNotes() {
-    const saved = localStorage.getItem(STORAGE_KEY_NOTES);
-    if (saved) $notesTextarea.value = saved;
-  }
-
-  function openNotes() {
-    $notesPanel.classList.add('notes-panel--open');
-    $notesOverlay.classList.add('notes-overlay--visible');
-    $notesTextarea.focus();
-  }
-
-  function closeNotes() {
-    $notesPanel.classList.remove('notes-panel--open');
-    $notesOverlay.classList.remove('notes-overlay--visible');
-  }
-
-  function saveNotes() {
-    localStorage.setItem(STORAGE_KEY_NOTES, $notesTextarea.value);
-  }
-
   function openExport() {
     const data = {
       version: 1,
       exportedAt: new Date().toISOString(),
-      progress: progressMap,
-      notes: $notesTextarea.value
+      progress: progressMap
     };
     $exportTextarea.value = JSON.stringify(data, null, 2);
     $modalExport.classList.add('modal-overlay--visible');
@@ -1505,11 +1987,6 @@
         saveProgress();
       }
 
-      if (typeof data.notes === 'string') {
-        $notesTextarea.value = data.notes;
-        saveNotes();
-      }
-
       closeImport();
       render();
       showToast('Progress imported successfully!');
@@ -1526,8 +2003,6 @@
       progressMap[t.id] = t.completed;
     });
     saveProgress();
-    $notesTextarea.value = '';
-    saveNotes();
     currentView = 'grid';
     currentTopicId = null;
     render();
@@ -1539,24 +2014,7 @@
   ──────────────────────────────────────────── */
   let activeAlgoTimer = null;
 
-  function mountInteractiveWidget(content) {
-    if (activeAlgoTimer) {
-      clearInterval(activeAlgoTimer);
-      activeAlgoTimer = null;
-    }
 
-    const container = document.getElementById('widget-container');
-    if (!container) return;
-
-    const wType = content.interactiveWidget;
-    if (wType === 'stack') {
-      renderStackWidget(container);
-    } else if (wType === 'queue') {
-      renderQueueWidget(container);
-    } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
-      renderAlgoVisualizer(container, wType);
-    }
-  }
 
   function renderAlgoVisualizer(container, algoType) {
     const isSearch = algoType === 'linear-search' || algoType === 'binary-search';
@@ -1876,16 +2334,16 @@
       let swapped = false;
       for (let j = 0; j < n - 1 - i; j++) {
         comparisons++;
-        steps.push({ type: 'compare', arr: [...a], compareIdx: [j, j + 1], swapIdx: [], settled: [...settled], comparisons, swaps, status: `Comparing index [${j}] (${a[j]}) and [${j+1}] (${a[j+1]})` });
+        steps.push({ type: 'compare', arr: [...a], compareIdx: [j, j + 1], swapIdx: [], settled: [...settled], comparisons, swaps, status: `Comparing index [${j}] (${a[j]}) and [${j + 1}] (${a[j + 1]})` });
         if (a[j] > a[j + 1]) {
           const temp = a[j]; a[j] = a[j + 1]; a[j + 1] = temp;
           swaps++;
           swapped = true;
-          steps.push({ type: 'swap', arr: [...a], compareIdx: [], swapIdx: [j, j + 1], settled: [...settled], comparisons, swaps, status: `Swapped ${a[j+1]} and ${a[j]}` });
+          steps.push({ type: 'swap', arr: [...a], compareIdx: [], swapIdx: [j, j + 1], settled: [...settled], comparisons, swaps, status: `Swapped ${a[j + 1]} and ${a[j]}` });
         }
       }
       settled.push(n - 1 - i);
-      steps.push({ type: 'pass_done', arr: [...a], compareIdx: [], swapIdx: [], settled: [...settled], comparisons, swaps, status: `Pass ${i+1} complete. Value ${a[n-1-i]} settled at index [${n-1-i}].` });
+      steps.push({ type: 'pass_done', arr: [...a], compareIdx: [], swapIdx: [], settled: [...settled], comparisons, swaps, status: `Pass ${i + 1} complete. Value ${a[n - 1 - i]} settled at index [${n - 1 - i}].` });
       if (!swapped) break;
     }
     const allSettled = a.map((_, idx) => idx);
@@ -1935,13 +2393,13 @@
         comparisons++;
         a[j + 1] = a[j];
         swaps++;
-        steps.push({ type: 'shift', arr: [...a], compareIdx: [j, j + 1], swapIdx: [j + 1], settled: [...settled], comparisons, swaps, status: `Shifted ${a[j]} right to index [${j+1}]` });
+        steps.push({ type: 'shift', arr: [...a], compareIdx: [j, j + 1], swapIdx: [j + 1], settled: [...settled], comparisons, swaps, status: `Shifted ${a[j]} right to index [${j + 1}]` });
         j--;
       }
       if (j >= 0) comparisons++;
       a[j + 1] = current;
-      settled = Array.from({length: i + 1}, (_, idx) => idx);
-      steps.push({ type: 'insert', arr: [...a], compareIdx: [], swapIdx: [j + 1], settled: [...settled], comparisons, swaps, status: `Inserted ${current} at index [${j+1}]` });
+      settled = Array.from({ length: i + 1 }, (_, idx) => idx);
+      steps.push({ type: 'insert', arr: [...a], compareIdx: [], swapIdx: [j + 1], settled: [...settled], comparisons, swaps, status: `Inserted ${current} at index [${j + 1}]` });
     }
     const allSettled = a.map((_, idx) => idx);
     steps.push({ type: 'done', arr: [...a], compareIdx: [], swapIdx: [], settled: allSettled, comparisons, swaps, status: 'Insertion Sort complete!' });
@@ -2336,23 +2794,6 @@
 
     $btnTheme.addEventListener('click', toggleTheme);
 
-    $btnNotes.addEventListener('click', openNotes);
-    $btnNotesClose.addEventListener('click', closeNotes);
-    $notesOverlay.addEventListener('click', closeNotes);
-    $notesTextarea.addEventListener('input', saveNotes);
-
-    $btnExport.addEventListener('click', openExport);
-    $btnExportCopy.addEventListener('click', copyExport);
-    $btnExportClose.addEventListener('click', closeExport);
-    $modalExport.addEventListener('click', e => { if (e.target === $modalExport) closeExport(); });
-
-    $btnImport.addEventListener('click', openImport);
-    $btnImportApply.addEventListener('click', applyImport);
-    $btnImportClose.addEventListener('click', closeImport);
-    $modalImport.addEventListener('click', e => { if (e.target === $modalImport) closeImport(); });
-
-    $btnReset.addEventListener('click', resetProgress);
-
     $hamburger.addEventListener('click', () => {
       const isOpen = $headerActions.classList.toggle('header__actions--open');
       $hamburger.setAttribute('aria-expanded', isOpen);
@@ -2380,12 +2821,172 @@
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         closeSidebar();
-        closeNotes();
         closeExport();
         closeImport();
+        closeLoginModal();
         $headerActions.classList.remove('header__actions--open');
       }
     });
+  }
+
+  /* ────────────────────────────────────────────
+     AUTH MODAL & GOOGLE OAUTH EVENTS
+  ──────────────────────────────────────────── */
+  function bindAuthModalEvents() {
+    const $btnClose = document.getElementById('btn-login-close');
+    const $overlay = document.getElementById('modal-login-overlay');
+    const $btnGoogle = document.getElementById('btn-google-login');
+
+    if ($btnClose) $btnClose.addEventListener('click', closeLoginModal);
+    if ($overlay) {
+      $overlay.addEventListener('click', e => {
+        if (e.target === $overlay) closeLoginModal();
+      });
+    }
+
+    if ($btnGoogle) {
+      $btnGoogle.addEventListener('click', handleGoogleSignIn);
+    }
+  }
+
+  let gIdInitialized = false;
+
+  function getGoogleClientId() {
+    return (window.ENV && window.ENV.GOOGLE_CLIENT_ID) || '388160599090-slda0efpv5oo0ejq6vl4foa6hiu03pst.apps.googleusercontent.com';
+  }
+
+  function initGoogleAuth() {
+    const clientId = getGoogleClientId();
+    if (!clientId) return;
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      if (!gIdInitialized) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response) => {
+              if (response && response.credential) {
+                await processGoogleLogin({ credential: response.credential });
+              }
+            },
+            auto_select: false,
+            itp_support: true,
+            use_fedcm_for_prompt: false
+          });
+          gIdInitialized = true;
+        } catch (e) {
+          console.warn('GSI initialize warning:', e.message);
+        }
+      }
+
+      // Render standard Google Sign-In button into container for max compatibility (including Incognito)
+      const container = document.getElementById('g_id_signin_container');
+      if (container && container.children.length === 0) {
+        try {
+          window.google.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            width: 280,
+            text: 'continue_with',
+            shape: 'rectangular'
+          });
+        } catch (e) {
+          console.warn('Failed to render GSI button:', e.message);
+        }
+      }
+    }
+  }
+
+  function handleGoogleSignIn() {
+    const $banner = document.getElementById('auth-error-banner');
+    if ($banner) $banner.style.display = 'none';
+
+    initGoogleAuth();
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        // 1. First try to trigger the rendered Google Sign-In button if available
+        const renderedBtn = document.querySelector('#g_id_signin_container div[role="button"]');
+        if (renderedBtn) {
+          renderedBtn.click();
+          return;
+        }
+
+        // 2. Fallback to Google prompt with notification handler
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+            const reason = notification.getNotDisplayedReason ? notification.getNotDisplayedReason() : '';
+            console.log('GSI prompt notice:', reason);
+          }
+        });
+      } catch (e) {
+        if ($banner) {
+          $banner.textContent = 'Could not initiate Google Sign-In. Please click the Google button below.';
+          $banner.style.display = 'block';
+        }
+      }
+    } else {
+      if ($banner) {
+        $banner.textContent = 'Google Sign-In SDK is loading... Please wait a moment and try again.';
+        $banner.style.display = 'block';
+      }
+    }
+  }
+
+  window.handleGoogleSignInCallback = async function(response) {
+    if (response && response.credential) {
+      await processGoogleLogin({ credential: response.credential });
+    }
+  };
+
+  async function processGoogleLogin(payload) {
+    const $banner = document.getElementById('auth-error-banner');
+    if ($banner) $banner.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errMsg = data.error ? data.error.message : 'Google authentication failed.';
+        if ($banner) {
+          $banner.textContent = errMsg;
+          $banner.style.display = 'block';
+        }
+        return;
+      }
+
+      // Verification Success
+      authState.accessToken = data.accessToken;
+      authState.user = data.user;
+      authState.isLoggedIn = true;
+      localStorage.setItem('dsa_access_token', data.accessToken);
+      localStorage.setItem('dsa_user', JSON.stringify(data.user));
+      localStorage.setItem('dsa_has_session', 'true');
+      sessionStorage.setItem('dsa_access_token', data.accessToken);
+      renderHeaderAuthUI();
+      closeLoginModal();
+      showToast(`Signed in as ${data.user.email}`);
+
+      await syncProgressWithServer();
+
+      if (pendingAction && pendingAction.type === 'toggle_topic') {
+        const topicToToggle = pendingAction.topicId;
+        const intendedState = pendingAction.intendedState;
+        pendingAction = null;
+        await handleTopicCompletionToggle(topicToToggle, intendedState);
+      }
+    } catch (err) {
+      if ($banner) {
+        $banner.textContent = 'Network error during Google sign-in.';
+        $banner.style.display = 'block';
+      }
+    }
   }
 
   /* ────────────────────────────────────────────
