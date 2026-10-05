@@ -35,10 +35,10 @@
     chevronDown: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
   };
 
-  /* ────────── Constants ────────── */
-  const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress-v2';
-  const STORAGE_KEY_THEME = 'dsa-tracker-theme';
-  const API_BASE = (window.ENV && window.ENV.API_BASE_URL) || 'http://localhost:3001/api';
+  const IS_LOCAL_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const API_BASE = (window.ENV && window.ENV.API_BASE_URL) 
+    ? window.ENV.API_BASE_URL 
+    : (IS_LOCAL_HOST ? 'http://localhost:3001/api' : 'https://dsa-be-i1c6.onrender.com/api');
   const GOOGLE_CLIENT_ID = (window.ENV && window.ENV.GOOGLE_CLIENT_ID) || '';
   const TOAST_DURATION = 2400;
 
