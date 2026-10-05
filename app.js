@@ -35,6 +35,9 @@
     chevronDown: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
   };
 
+  /* ────────── Constants ────────── */
+  const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress-v2';
+  const STORAGE_KEY_THEME = 'dsa-tracker-theme';
   const IS_LOCAL_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const API_BASE = (window.ENV && window.ENV.API_BASE_URL) 
     ? window.ENV.API_BASE_URL 
