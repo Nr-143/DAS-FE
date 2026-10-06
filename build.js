@@ -29,6 +29,7 @@ const itemsToCopy = [
   'landing.css',
   'app.js',
   'config.js',
+  'logo.png',
   'data',
   'content'
 ];

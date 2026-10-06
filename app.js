@@ -272,23 +272,30 @@
     }
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function renderHeaderAuthUI() {
     const $container = document.getElementById('header-auth-container');
     if (!$container) return;
 
     if (authState.isLoggedIn && !authState.user) {
-      // Optimistic state: token exists but refresh not done yet
       $container.innerHTML = `<span style="font-size:0.82rem;color:var(--text-secondary);padding:4px 10px;">Loading...</span>`;
       return;
     }
     if (authState.isLoggedIn && authState.user) {
       $container.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:20px;background:var(--bg-surface-hover);border:1px solid var(--border-default);font-size:0.82rem;">
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--accent-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">
-            ${(authState.user.email || 'U')[0].toUpperCase()}
-          </span>
-          <span style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(authState.user.email)}</span>
-          <button id="btn-logout" class="btn btn--sm" style="padding:2px 8px;font-size:0.75rem;margin-left:4px;" title="Log out">Log out</button>
+        <div class="user-auth-pill">
+          <span class="user-avatar">${(authState.user.email || 'U')[0].toUpperCase()}</span>
+          <span class="user-email-text" title="${escapeHtml(authState.user.email)}">${escapeHtml(authState.user.email)}</span>
+          <button id="btn-logout" class="btn-logout-sm" title="Log out">Log out</button>
         </div>
       `;
       const logoutBtn = $container.querySelector('#btn-logout');
@@ -297,7 +304,7 @@
       }
     } else {
       $container.innerHTML = `
-        <button id="btn-header-login" class="btn btn--primary" style="padding:6px 14px;font-size:0.84rem;font-weight:600;">Log in</button>
+        <button id="btn-header-login" class="btn btn--primary btn-login-sm">Log in</button>
       `;
       const loginBtn = $container.querySelector('#btn-header-login');
       if (loginBtn) {
@@ -3456,28 +3463,34 @@
      GLOBAL EVENT LISTENERS
   ──────────────────────────────────────────── */
   function bindGlobalEvents() {
-    $headerLogo.addEventListener('click', (e) => {
-      e.preventDefault();
-      showGridView();
-    });
+    if ($headerLogo) {
+      $headerLogo.addEventListener('click', (e) => {
+        e.preventDefault();
+        showGridView();
+      });
+    }
 
-    $btnSidebarToggle.addEventListener('click', () => {
-      if ($sidebar.classList.contains('sidebar--open')) {
-        closeSidebar();
-      } else {
-        openSidebar();
-      }
-    });
+    if ($btnSidebarToggle) {
+      $btnSidebarToggle.addEventListener('click', () => {
+        if ($sidebar && $sidebar.classList.contains('sidebar--open')) {
+          closeSidebar();
+        } else {
+          openSidebar();
+        }
+      });
+    }
 
-    $btnSidebarClose.addEventListener('click', closeSidebar);
-    $sidebarOverlay.addEventListener('click', closeSidebar);
+    if ($btnSidebarClose) $btnSidebarClose.addEventListener('click', closeSidebar);
+    if ($sidebarOverlay) $sidebarOverlay.addEventListener('click', closeSidebar);
 
-    $btnTheme.addEventListener('click', toggleTheme);
+    if ($btnTheme) $btnTheme.addEventListener('click', toggleTheme);
 
-    $hamburger.addEventListener('click', () => {
-      const isOpen = $headerActions.classList.toggle('header__actions--open');
-      $hamburger.setAttribute('aria-expanded', isOpen);
-    });
+    if ($hamburger) {
+      $hamburger.addEventListener('click', () => {
+        const isOpen = $headerActions ? $headerActions.classList.toggle('header__actions--open') : false;
+        $hamburger.setAttribute('aria-expanded', isOpen);
+      });
+    }
 
     document.addEventListener('click', e => {
       const crossLink = e.target.closest('[data-topic]');
@@ -3492,7 +3505,7 @@
         return;
       }
 
-      if (!$hamburger.contains(e.target) && !$headerActions.contains(e.target)) {
+      if ($hamburger && $headerActions && !$hamburger.contains(e.target) && !$headerActions.contains(e.target)) {
         $headerActions.classList.remove('header__actions--open');
         $hamburger.setAttribute('aria-expanded', 'false');
       }
@@ -3504,7 +3517,7 @@
         closeExport();
         closeImport();
         closeLoginModal();
-        $headerActions.classList.remove('header__actions--open');
+        if ($headerActions) $headerActions.classList.remove('header__actions--open');
       }
     });
   }
