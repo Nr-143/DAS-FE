@@ -31,6 +31,18 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
 
   howItWorksTogether: "A data structure is the container you choose for your data. An algorithm is the set of instructions you run on that container. DSA is about picking the right container AND the right instructions together — because the same task can be fast or painfully slow depending on that combination. For example, finding a name in an unsorted list means checking every entry one by one. Store the same names in a sorted structure instead, and you can use a much faster search algorithm (binary search) that eliminates half the remaining options at every step. Learn more in <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"time-complexity\">Time Complexity (Big-O)</a>.",
 
+  bigPicture: {
+    title: "The Big Picture: What You're Actually Building Toward",
+    familiesHeading: "Data structures roughly split into two families:",
+    linearText: "<strong>Linear</strong> — elements arranged one after another in a sequence: <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"arrays\">Array</a>, String, <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"linked-list-singly\">Linked List</a>, Stack, Queue. <em>(Level 2 on the roadmap.)</em>",
+    nonlinearText: "<strong>Non-linear</strong> — elements arranged in branching or networked relationships rather than a straight line: Trees, Graphs, Hash Tables. <em>(Levels 4–6, locked.)</em>",
+    categoriesHeading: "The algorithms you'll build on top of these fall into a few recurring categories:",
+    searchSortText: "<strong>Searching & Sorting</strong> — finding and ordering data. <em>(<a href=\"#\" class=\"lesson-cross-link\" data-topic=\"binary-search\">Binary Search</a> is Level 3 on the roadmap.)</em>",
+    recursionText: "<strong>Recursion & Divide-and-Conquer</strong> — breaking a problem into smaller versions of itself. <em>(<a href=\"#\" class=\"lesson-cross-link\" data-topic=\"recursion\">Recursion</a> is Level 1, and resurfaces directly in Merge Sort and Quick Sort.)</em>",
+    patternsText: "<strong>Algorithmic Patterns</strong> — reusable strategies like Two Pointers, Sliding Window, Backtracking, Greedy, and Dynamic Programming, which combine the structures and basic algorithms above to solve more complex problems. <em>(Level 7, locked.)</em>",
+    closingText: "This page is the entry point; everything else on the roadmap is really just going deeper into one of these families or categories."
+  },
+
   workedExample: {
     title: "Searching for a Contact: Unsorted Array vs. Sorted Array with Binary Search",
     primitiveText: "<strong>Scenario A (Unsorted Array):</strong> Searching for a name among 1,000 unsorted contacts requires linear search, checking up to 1,000 entries one by one.",
@@ -110,6 +122,13 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
     "Data Structure choice dictates available Algorithms: sorting data enables logarithmic lookup algorithms."
   ],
 
+  tradeOffs: {
+    title: "Trade-offs: There's No Single 'Best' Data Structure",
+    corePoint: "Every data structure makes a trade-off — usually between how fast you can access an element, how fast you can insert or delete one, and how much memory it uses. There's no data structure that wins at everything.",
+    comparisonText: "For example, an <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"arrays\">Array</a> gives O(1) access by index but costs O(n) to insert at the front, since everything after has to shift. A <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"linked-list-singly\">Linked List</a> flips that trade-off: O(1) insertion at the front, but O(n) just to reach a given position, since there's no direct index to jump to.",
+    closingText: "The skill this course is actually teaching isn't memorizing structures in isolation — it's learning to match a structure's trade-offs to what a specific problem actually needs most (fast lookups? frequent insertions? order that matters?)."
+  },
+
   commonMistakes: [
     {
       title: "Mistake 1: Memorizing solutions instead of patterns",
@@ -150,6 +169,11 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
   ],
 
   historyFact: "The word \"algorithm\" itself comes from the name of Muhammad ibn Musa al-Khwarizmi, a 9th-century Persian mathematician whose work on step-by-step methods for solving equations was hugely influential — his name, Latinized, is where \"algorithm\" comes from.",
+
+  languageAgnostic: {
+    title: "DSA Is Language-Agnostic",
+    text: "The concepts on this page — arrays, stacks, recursion, Big-O — are universal across virtually every programming language. This course teaches them in JavaScript because it's visual and accessible, but the same thinking applies directly in Python, Java, C++, Go, or anything else. Only the exact syntax changes from language to language; the underlying ideas don't."
+  },
 
   practice: [
     {

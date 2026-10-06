@@ -395,8 +395,12 @@
         updateRouterState('lesson', topicParam, activeTab, pushHistory);
         return;
       } else {
-        const topic = topicsData.find(t => t.id === topicParam);
-        showToast(`Topic "${topic ? topic.title : topicParam}" is locked.`);
+        showToast('Coming Soon — Content preparation in progress.');
+        const fallbackTopicId = 'recursion';
+        currentView = 'lesson';
+        currentTopicId = fallbackTopicId;
+        updateRouterState('lesson', fallbackTopicId, activeTab, false);
+        return;
       }
     }
 
@@ -477,15 +481,14 @@
   }
 
   function isCompleted(topicId) {
+    if (!isTopicUnlocked(topicId)) return false;
     return !!progressMap[topicId];
   }
 
   function isTopicUnlocked(topicId) {
-    const globalIdx = topicsData.findIndex(t => t.id === topicId);
-    if (globalIdx <= 0) return true;
-    if (isCompleted(topicId)) return true;
-    const prevTopic = topicsData[globalIdx - 1];
-    return prevTopic ? isCompleted(prevTopic.id) : true;
+    const topic = topicsData.find(t => t.id === topicId);
+    if (!topic) return false;
+    return topic.order <= 6;
   }
 
   function render() {
@@ -524,7 +527,7 @@
 
       const totalInLevel = group.topics.length;
       const completedInLevel = group.topics.filter(t => isCompleted(t.id)).length;
-      const hasUnlocked = completedInLevel > 0;
+      const hasUnlocked = group.level === 1 || group.topics.some(t => isTopicUnlocked(t.id));
 
       const groupHeader = document.createElement('div');
       groupHeader.className = 'sidebar__group-header';
@@ -550,45 +553,50 @@
       });
 
       group.topics.forEach(topic => {
-        const completed = isCompleted(topic.id);
+        const isUnlocked = isTopicUnlocked(topic.id);
+        const completed = isUnlocked && isCompleted(topic.id);
         const isActive = currentView === 'lesson' && currentTopicId === topic.id;
-        const globalIdx = topicsData.findIndex(t => t.id === topic.id);
-        const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
-        const isUnlocked = globalIdx === 0 || completed || (prevTopic && isCompleted(prevTopic.id));
 
         const item = document.createElement('a');
         item.className = 'sidebar__item';
         item.href = '#';
 
-        if (completed) {
-          item.classList.add('sidebar__item--completed');
-        } else if (isUnlocked) {
-          item.classList.add('sidebar__item--unlocked');
-        } else {
+        if (!isUnlocked) {
           item.classList.add('sidebar__item--locked');
+          item.setAttribute('data-tooltip', 'Content preparation in progress');
+          item.setAttribute('title', 'Content preparation in progress');
+        } else if (completed) {
+          item.classList.add('sidebar__item--completed');
+        } else {
+          item.classList.add('sidebar__item--unlocked');
         }
 
         if (isActive) {
           item.classList.add('sidebar__item--active');
         }
 
-        const iconSvg = completed ? SVG_ICONS.checkCircle : (isUnlocked ? SVG_ICONS.bookOpen : SVG_ICONS.lock);
+        const iconSvg = !isUnlocked ? SVG_ICONS.lock : (completed ? SVG_ICONS.checkCircle : SVG_ICONS.bookOpen);
+        const comingSoonBadge = !isUnlocked ? `<span class="sidebar__coming-soon-badge">Coming Soon</span>` : '';
 
         item.innerHTML = `
           <span class="sidebar__item-label">
             <span class="sidebar__item-order">${topic.order}.</span>
             <span>${escapeHtml(topic.title)}</span>
           </span>
-          <span class="sidebar__item-icon">${iconSvg}</span>
+          <span style="display:flex; align-items:center; gap:6px;">
+            ${comingSoonBadge}
+            <span class="sidebar__item-icon">${iconSvg}</span>
+          </span>
         `;
 
         item.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           if (isUnlocked) {
             openLesson(topic.id);
             closeSidebar();
           } else {
-            showToast('Locked — complete previous topics first.');
+            showToast('Coming Soon — Content preparation in progress.');
           }
         });
 
@@ -653,11 +661,9 @@
       });
 
       levelGroup.topics.forEach(topic => {
-        const completed = isCompleted(topic.id);
+        const isUnlocked = isTopicUnlocked(topic.id);
+        const completed = isUnlocked && isCompleted(topic.id);
         const justUnlocked = justUnlockedIds.has(topic.id);
-        const globalIdx = topicsData.findIndex(t => t.id === topic.id);
-        const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
-        const isUnlocked = globalIdx === 0 || completed || (prevTopic && isCompleted(prevTopic.id));
 
         const card = document.createElement('div');
         card.className = 'topic-card';
@@ -665,12 +671,14 @@
         card.setAttribute('role', isUnlocked ? 'button' : 'presentation');
         card.setAttribute('tabindex', isUnlocked ? '0' : '-1');
 
-        if (completed) {
-          card.classList.add('topic-card--completed');
-        } else if (isUnlocked) {
-          card.classList.add('topic-card--unlocked');
-        } else {
+        if (!isUnlocked) {
           card.classList.add('topic-card--locked');
+          card.setAttribute('data-tooltip', 'Content preparation in progress');
+          card.setAttribute('title', 'Content preparation in progress');
+        } else if (completed) {
+          card.classList.add('topic-card--completed');
+        } else {
+          card.classList.add('topic-card--unlocked');
         }
 
         if (justUnlocked) {
@@ -681,13 +689,17 @@
           }, { once: true });
         }
 
-        const statusClass = completed ? 'topic-card__status-icon--complete' : (isUnlocked ? 'topic-card__status-icon--unlocked' : 'topic-card__status-icon--locked');
-        const iconSvg = completed ? SVG_ICONS.checkCircle : (isUnlocked ? SVG_ICONS.bookOpen : SVG_ICONS.lock);
+        const statusClass = !isUnlocked ? 'topic-card__status-icon--locked' : (completed ? 'topic-card__status-icon--complete' : 'topic-card__status-icon--unlocked');
+        const iconSvg = !isUnlocked ? SVG_ICONS.lock : (completed ? SVG_ICONS.checkCircle : SVG_ICONS.bookOpen);
+        const comingSoonBadge = !isUnlocked ? `<span class="badge badge--coming-soon">Coming Soon</span>` : '';
 
         card.innerHTML = `
           <div class="topic-card__header">
             <span class="topic-card__order">${topic.order}</span>
-            <span class="topic-card__status-icon ${statusClass}" aria-label="${completed ? 'Completed' : (isUnlocked ? 'Unlocked' : 'Locked')}">${iconSvg}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${comingSoonBadge}
+              <span class="topic-card__status-icon ${statusClass}" aria-label="${!isUnlocked ? 'Coming Soon' : (completed ? 'Completed' : 'Unlocked')}">${iconSvg}</span>
+            </div>
           </div>
           <h3 class="topic-card__title">${escapeHtml(topic.title)}</h3>
           ${renderSubtopics(topic)}
@@ -699,7 +711,10 @@
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLesson(topic.id); }
           });
         } else {
-          card.addEventListener('click', () => showToast('Locked — complete previous topics first.'));
+          card.addEventListener('click', (e) => {
+            e.preventDefault();
+            showToast('Coming Soon — Content preparation in progress.');
+          });
         }
 
         grid.appendChild(card);
@@ -733,7 +748,7 @@
   ──────────────────────────────────────────── */
   function openLesson(topicId, tab = 'concept') {
     if (!isTopicUnlocked(topicId)) {
-      showToast('Locked — complete previous topics first.');
+      showToast('Coming Soon — Content preparation in progress.');
       return;
     }
     currentView = 'lesson';
@@ -758,17 +773,16 @@
     const topic = topicsData.find(t => t.id === topicId);
 
     if (!isTopicUnlocked(topicId)) {
-      const globalIdx = topicsData.findIndex(t => t.id === topicId);
-      const prevTopic = globalIdx > 0 ? topicsData[globalIdx - 1] : null;
       $main.innerHTML = `
         <div class="lesson-page" style="text-align:center;padding:60px 20px;">
-          <div style="font-size:3.5rem;margin-bottom:16px;">🔒</div>
-          <h2 style="font-size:1.8rem;margin-bottom:12px;">Topic Locked</h2>
+          <div style="font-size:3.5rem;margin-bottom:12px;">🔒</div>
+          <span class="badge badge--coming-soon" style="display:inline-block;padding:6px 16px;border-radius:20px;font-size:0.88rem;font-weight:700;background:rgba(234,179,8,0.15);color:#EAB308;border:1px solid rgba(234,179,8,0.3);margin-bottom:16px;">Coming Soon</span>
+          <h2 style="font-size:1.8rem;margin-bottom:12px;color:var(--text-primary);">Content Preparation in Progress</h2>
           <p style="color:var(--text-secondary);max-width:500px;margin:0 auto 24px auto;line-height:1.6;">
-            "${escapeHtml(topic ? topic.title : 'This topic')}" is locked. Complete ${prevTopic ? `<strong>"${escapeHtml(prevTopic.title)}"</strong>` : 'the previous topic'} first to unlock it.
+            "${escapeHtml(topic ? topic.title : 'This topic')}" is currently under development. Please complete topics 1 to 6 in Level 1 Foundations!
           </p>
           <button class="btn btn--primary" id="btn-lock-back" style="padding:10px 24px;font-weight:600;border-radius:20px;cursor:pointer;background:var(--accent-primary);color:#fff;border:none;">
-            ← Return to Roadmap
+            ← Return to Available Topics
           </button>
         </div>
       `;
@@ -776,7 +790,7 @@
       if (backBtn) {
         backBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          showGridView();
+          openLesson('recursion');
         });
       }
       return;
@@ -967,8 +981,8 @@
           </button>
         ` : '<div></div>'}
         ${nextTopic ? `
-          <button id="btn-next-topic" class="btn ${isNextUnlocked ? 'btn--primary' : ''}" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-weight:600; border-radius:10px; cursor:${isNextUnlocked ? 'pointer' : 'not-allowed'}; background:${isNextUnlocked ? 'var(--accent-primary)' : 'var(--bg-surface)'}; color:${isNextUnlocked ? '#ffffff' : 'var(--text-muted)'}; border:${isNextUnlocked ? 'none' : '1px solid var(--border-default)'}; opacity:${isNextUnlocked ? '1' : '0.65'}; box-shadow:${isNextUnlocked ? '0 2px 8px rgba(108,99,255,0.3)' : 'none'};">
-            Next: ${escapeHtml(nextTopic.title)} ${isNextUnlocked ? '→' : '🔒'}
+          <button id="btn-next-topic" class="btn ${isNextUnlocked ? 'btn--primary' : ''}" ${!isNextUnlocked ? 'data-tooltip="Content preparation in progress" title="Content preparation in progress"' : ''} style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-weight:600; border-radius:10px; cursor:${isNextUnlocked ? 'pointer' : 'not-allowed'}; background:${isNextUnlocked ? 'var(--accent-primary)' : 'var(--bg-surface)'}; color:${isNextUnlocked ? '#ffffff' : 'var(--text-muted)'}; border:${isNextUnlocked ? 'none' : '1px solid var(--border-default)'}; opacity:${isNextUnlocked ? '1' : '0.65'}; box-shadow:${isNextUnlocked ? '0 2px 8px rgba(108,99,255,0.3)' : 'none'};">
+            Next: ${escapeHtml(nextTopic.title)} ${isNextUnlocked ? '→' : '🔒 (Coming Soon)'}
           </button>
         ` : '<div></div>'}
       </div>
@@ -995,7 +1009,7 @@
         if (isNextUnlocked) {
           openLesson(nextTopic.id);
         } else {
-          showToast(`Locked — complete "${currentTopic ? currentTopic.title : 'this topic'}" first to unlock ${nextTopic.title}.`);
+          showToast('Coming Soon — Content preparation in progress.');
         }
       });
     }
@@ -1012,18 +1026,19 @@
   function renderConceptPanelSections(content, panel, topicId) {
     let sectionCount = 1;
 
-    // 0. Why This Actually Matters (Motivation Hook)
-    if (content.whyMatters) {
-      const whySec = document.createElement('section');
-      whySec.className = 'lesson-section reveal-on-scroll';
-      whySec.id = 'section-why-matters';
-      whySec.innerHTML = `
-        <h2 class="lesson-section__title">Why This Actually Matters</h2>
-        <div class="lesson-section__body" style="font-size:0.98rem; line-height:1.65; color:var(--text-primary); background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default); border-left:4px solid var(--accent-primary);">
-          <p style="margin:0;">${content.whyMatters}</p>
-        </div>
-      `;
-      panel.appendChild(whySec);
+    // 0. Custom Structured Sections Array (Variables & Memory)
+    if (content.sections && Array.isArray(content.sections)) {
+      content.sections.forEach(sec => {
+        const s = document.createElement('section');
+        s.className = 'lesson-section reveal-on-scroll';
+        s.id = sec.id;
+        s.innerHTML = `
+          <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(sec.title)}</h2>
+          <div class="lesson-section__body">${sec.contentHtml}</div>
+        `;
+        panel.appendChild(s);
+      });
+      return;
     }
 
     // 1. Definition-Style List (Task 2 Format)
@@ -1050,7 +1065,58 @@
       panel.appendChild(defSection);
     }
 
-    // 2. Interactive Big-O Explorer
+    // 2. Why This Actually Matters (Motivation Hook)
+    if (content.whyMatters) {
+      const whySec = document.createElement('section');
+      whySec.className = 'lesson-section reveal-on-scroll';
+      whySec.id = 'section-why-matters';
+      whySec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. Why This Actually Matters</h2>
+        <div class="lesson-section__body" style="font-size:0.98rem; line-height:1.65; color:var(--text-primary); background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default); border-left:4px solid var(--accent-primary);">
+          <p style="margin:0;">${content.whyMatters}</p>
+        </div>
+      `;
+      panel.appendChild(whySec);
+    }
+
+    // 3. The Big Picture: What You're Actually Building Toward
+    if (content.bigPicture) {
+      const bp = content.bigPicture;
+      const bigPicSec = document.createElement('section');
+      bigPicSec.className = 'lesson-section reveal-on-scroll';
+      bigPicSec.id = 'section-big-picture';
+
+      bigPicSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(bp.title)}</h2>
+        <div class="lesson-section__body" style="display:flex; flex-direction:column; gap:16px; font-size:0.95rem; line-height:1.65; color:var(--text-primary);">
+          
+          <div style="background:var(--bg-surface); padding:18px 20px; border-radius:10px; border:1px solid var(--border-default); display:flex; flex-direction:column; gap:10px;">
+            <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(bp.familiesHeading)}</div>
+            <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">
+              <li>${bp.linearText}</li>
+              <li>${bp.nonlinearText}</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--bg-surface); padding:18px 20px; border-radius:10px; border:1px solid var(--border-default); display:flex; flex-direction:column; gap:10px;">
+            <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(bp.categoriesHeading)}</div>
+            <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">
+              <li>${bp.searchSortText}</li>
+              <li>${bp.recursionText}</li>
+              <li>${bp.patternsText}</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--accent-gradient-subtle); padding:14px 18px; border-radius:8px; border:1px solid var(--border-accent); color:var(--text-primary); font-weight:500;">
+            💡 <strong>Note:</strong> ${escapeHtml(bp.closingText)}
+          </div>
+
+        </div>
+      `;
+      panel.appendChild(bigPicSec);
+    }
+
+    // 4. Interactive Big-O Explorer
     if (content.notations && content.notations.length > 0) {
       const explorerSection = document.createElement('section');
       explorerSection.className = 'lesson-section reveal-on-scroll';
@@ -1079,7 +1145,7 @@
       panel.appendChild(explorerSection);
     }
 
-    // 3. Worked Example
+    // 5. Worked Example
     if (content.workedExample) {
       const workedSec = document.createElement('section');
       workedSec.className = 'lesson-section reveal-on-scroll';
@@ -1127,7 +1193,7 @@
       }
     }
 
-    // 4. Visual Diagram / Combined Chart
+    // 6. Visual Diagram / Combined Chart
     if (content.visual || content.combinedChartSvg) {
       const visualSec = document.createElement('section');
       visualSec.className = 'lesson-section reveal-on-scroll';
@@ -1144,7 +1210,7 @@
       panel.appendChild(visualSec);
     }
 
-    // 4b. Interactive Widget (Stack / Queue / Algorithm Visualizer)
+    // 6b. Interactive Widget (Stack / Queue / Algorithm Visualizer)
     if (content.interactiveWidget) {
       const widgetSec = document.createElement('section');
       widgetSec.className = 'lesson-section reveal-on-scroll';
@@ -1161,7 +1227,7 @@
       panel.appendChild(widgetSec);
     }
 
-    // 5. Code Snippet
+    // 7. Code Snippet
     if (content.codeSnippet) {
       const codeSec = document.createElement('section');
       codeSec.className = 'lesson-section reveal-on-scroll';
@@ -1173,7 +1239,7 @@
       panel.appendChild(codeSec);
     }
 
-    // 6. Complexity Notes
+    // 8. Complexity Notes
     if (content.complexityNotes) {
       const compSec = document.createElement('section');
       compSec.className = 'lesson-section reveal-on-scroll';
@@ -1186,7 +1252,31 @@
       panel.appendChild(compSec);
     }
 
-    // 7. Common Mistakes
+    // 9. Trade-offs: There's No Single 'Best' Data Structure
+    if (content.tradeOffs) {
+      const to = content.tradeOffs;
+      const tradeSec = document.createElement('section');
+      tradeSec.className = 'lesson-section reveal-on-scroll';
+      tradeSec.id = 'section-trade-offs';
+
+      tradeSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(to.title)}</h2>
+        <div class="lesson-section__body" style="display:flex; flex-direction:column; gap:14px; font-size:0.95rem; line-height:1.65; color:var(--text-primary);">
+          <blockquote style="margin:0; padding:14px 18px; background:var(--bg-surface); border-left:4px solid var(--accent-primary); border-radius:0 8px 8px 0; font-weight:500; font-style:italic;">
+            "${escapeHtml(to.corePoint)}"
+          </blockquote>
+          <div style="background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default);">
+            ${to.comparisonText}
+          </div>
+          <p style="margin:0; font-weight:500; color:var(--text-secondary);">
+            ${escapeHtml(to.closingText)}
+          </p>
+        </div>
+      `;
+      panel.appendChild(tradeSec);
+    }
+
+    // 10. Common Mistakes
     if (content.commonMistakes) {
       const mistakesSec = document.createElement('section');
       mistakesSec.className = 'lesson-section reveal-on-scroll';
@@ -1204,7 +1294,7 @@
       panel.appendChild(mistakesSec);
     }
 
-    // 8. Real-World DSA You Already Use
+    // 11. Real-World DSA You Already Use
     if (content.realWorldDsa && content.realWorldDsa.length > 0) {
       const rwSec = document.createElement('section');
       rwSec.className = 'lesson-section reveal-on-scroll';
@@ -1231,7 +1321,7 @@
       panel.appendChild(rwSec);
     }
 
-    // 9. A Bit of History
+    // 12. A Bit of History
     if (content.historyFact) {
       const histSec = document.createElement('section');
       histSec.className = 'lesson-section reveal-on-scroll';
@@ -1249,6 +1339,27 @@
       `;
       panel.appendChild(histSec);
     }
+
+    // 13. DSA Is Language-Agnostic
+    if (content.languageAgnostic) {
+      const la = content.languageAgnostic;
+      const langSec = document.createElement('section');
+      langSec.className = 'lesson-section reveal-on-scroll';
+      langSec.id = 'section-language-agnostic';
+
+      langSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(la.title)}</h2>
+        <div class="combined-flow-box" style="border-left: 4px solid var(--accent-primary);">
+          <div class="combined-flow-box__title" style="display:flex; align-items:center; gap:8px;">
+            ${SVG_ICONS.globe || ''} <span>Universal Concepts</span>
+          </div>
+          <div style="color:var(--text-primary); margin-top:6px; line-height:1.65; font-size:0.95rem;">
+            ${escapeHtml(la.text)}
+          </div>
+        </div>
+      `;
+      panel.appendChild(langSec);
+    }
   }
 
   /* ────────────────────────────────────────────
@@ -1256,6 +1367,266 @@
   ──────────────────────────────────────────── */
   function renderQuestionsPanelSections(content, panel) {
     let sectionNum = 1;
+
+    // Dedicated Categorized Question Suite (Easy, Medium, Hard, Interview)
+    if (content.questionSuite && content.questionSuite.length > 0) {
+      const suiteSec = document.createElement('section');
+      suiteSec.className = 'lesson-section reveal-on-scroll';
+      suiteSec.id = 'section-question-suite';
+
+      suiteSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionNum++}. ${escapeHtml(content.title)} Questions Suite</h2>
+        
+        <!-- Difficulty Filter Bar -->
+        <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+          <button class="btn q-diff-filter btn--primary" data-diff="All" style="padding:6px 14px; font-size:0.88rem; cursor:pointer;">All (${content.questionSuite.length})</button>
+          <button class="btn q-diff-filter btn--secondary" data-diff="Easy" style="padding:6px 14px; font-size:0.88rem; cursor:pointer;">Easy (${content.questionSuite.filter(q => q.difficulty === 'Easy').length})</button>
+          <button class="btn q-diff-filter btn--secondary" data-diff="Medium" style="padding:6px 14px; font-size:0.88rem; cursor:pointer;">Medium (${content.questionSuite.filter(q => q.difficulty === 'Medium').length})</button>
+          <button class="btn q-diff-filter btn--secondary" data-diff="Hard" style="padding:6px 14px; font-size:0.88rem; cursor:pointer;">Hard (${content.questionSuite.filter(q => q.difficulty === 'Hard').length})</button>
+          <button class="btn q-diff-filter btn--secondary" data-diff="Interview" style="padding:6px 14px; font-size:0.88rem; cursor:pointer;">Interview (${content.questionSuite.filter(q => q.difficulty === 'Interview').length})</button>
+        </div>
+
+        <div class="q-suite-container">
+          ${content.questionSuite.map((q, idx) => `
+            <div class="q-suite-card" data-difficulty="${q.difficulty}" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px; margin-bottom:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-weight:700; color:var(--text-primary); font-size:0.98rem;">
+                  Question ${idx + 1} of ${content.questionSuite.length}
+                </span>
+                <span class="badge" style="padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; ${
+                  q.difficulty === 'Easy' ? 'background:rgba(52,211,153,0.15); color:#34D399; border:1px solid #34D399;' :
+                  q.difficulty === 'Medium' ? 'background:rgba(96,165,250,0.15); color:#60A5FA; border:1px solid #60A5FA;' :
+                  q.difficulty === 'Hard' ? 'background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid #EF4444;' :
+                  'background:rgba(167,139,250,0.15); color:#A78BFA; border:1px solid #A78BFA;'
+                }">
+                  ${q.difficulty}
+                </span>
+              </div>
+
+              <div style="font-weight:600; color:var(--text-primary); margin-bottom:12px; font-size:0.95rem;">
+                ${escapeHtml(q.question)}
+              </div>
+
+              ${q.code ? `<pre class="code-block" style="margin-bottom:14px;"><code>${escapeHtml(q.code)}</code></pre>` : ''}
+
+              <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                ${q.options.map(opt => {
+                  const letter = opt.trim().substring(0, 1);
+                  const isCorrect = letter === q.answer || opt === q.answer;
+                  return `
+                    <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
+                      ${escapeHtml(opt)}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+
+              <div class="quiz-explanation" style="display:none; padding:12px 16px; border-radius:8px; font-size:0.9rem; line-height:1.6; margin-top:10px;">
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      panel.appendChild(suiteSec);
+
+      setTimeout(() => {
+        // Difficulty filters
+        suiteSec.querySelectorAll('.q-diff-filter').forEach(filterBtn => {
+          filterBtn.addEventListener('click', () => {
+            const diff = filterBtn.getAttribute('data-diff');
+            suiteSec.querySelectorAll('.q-diff-filter').forEach(b => {
+              b.className = 'btn q-diff-filter btn--secondary';
+            });
+            filterBtn.className = 'btn q-diff-filter btn--primary';
+
+            suiteSec.querySelectorAll('.q-suite-card').forEach(card => {
+              if (diff === 'All' || card.getAttribute('data-difficulty') === diff) {
+                card.style.display = 'block';
+              } else {
+                card.style.display = 'none';
+              }
+            });
+          });
+        });
+
+        // Question cards verification
+        suiteSec.querySelectorAll('.q-suite-card').forEach((card, qIdx) => {
+          const qData = content.questionSuite[qIdx];
+          const expEl = card.querySelector('.quiz-explanation');
+          card.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              card.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                b.style.pointerEvents = 'none';
+                if (b.getAttribute('data-correct') === 'true') {
+                  b.style.background = 'rgba(16, 185, 129, 0.2)';
+                  b.style.borderColor = '#10B981';
+                  b.style.color = '#10B981';
+                } else {
+                  b.style.opacity = '0.5';
+                }
+              });
+              const isCorrect = btn.getAttribute('data-correct') === 'true';
+              if (isCorrect) {
+                btn.style.background = 'rgba(16, 185, 129, 0.25)';
+                btn.style.borderColor = '#10B981';
+              } else {
+                btn.style.background = 'rgba(239, 68, 68, 0.2)';
+                btn.style.borderColor = '#EF4444';
+                btn.style.color = '#EF4444';
+              }
+              if (expEl) {
+                expEl.style.display = 'block';
+                expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+                expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
+                expEl.style.color = 'var(--text-primary)';
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+              }
+            });
+          });
+        });
+      }, 0);
+    }
+
+    // 0. Beginner Concept Quiz (Mini Quiz)
+    if (content.miniQuiz && content.miniQuiz.length > 0) {
+      const miniQuizSec = document.createElement('section');
+      miniQuizSec.className = 'lesson-section reveal-on-scroll';
+      miniQuizSec.id = 'section-mini-quiz';
+
+      const cards = content.miniQuiz.map((q, idx) => `
+        <div class="quiz-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px; margin-bottom:16px;">
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:12px; font-size:0.98rem;">
+            ${escapeHtml(q.question)}
+          </div>
+          <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            ${q.options.map(opt => {
+              const letter = opt.trim().substring(0, 1);
+              const isCorrect = letter === q.answer || opt === q.answer;
+              return `
+                <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
+                  ${escapeHtml(opt)}
+                </button>
+              `;
+            }).join('')}
+          </div>
+          <div class="quiz-explanation" style="display:none; padding:12px 16px; border-radius:8px; font-size:0.9rem; line-height:1.6; margin-top:10px;">
+          </div>
+        </div>
+      `).join('');
+
+      miniQuizSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionNum++}. Beginner Concept Quiz</h2>
+        <div class="lesson-section__body">${cards}</div>
+      `;
+      panel.appendChild(miniQuizSec);
+
+      setTimeout(() => {
+        miniQuizSec.querySelectorAll('.quiz-card').forEach((card, qIdx) => {
+          const qData = content.miniQuiz[qIdx];
+          const expEl = card.querySelector('.quiz-explanation');
+          card.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              card.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                b.style.pointerEvents = 'none';
+                if (b.getAttribute('data-correct') === 'true') {
+                  b.style.background = 'rgba(16, 185, 129, 0.2)';
+                  b.style.borderColor = '#10B981';
+                  b.style.color = '#10B981';
+                } else {
+                  b.style.opacity = '0.5';
+                }
+              });
+              const isCorrect = btn.getAttribute('data-correct') === 'true';
+              if (isCorrect) {
+                btn.style.background = 'rgba(16, 185, 129, 0.25)';
+                btn.style.borderColor = '#10B981';
+              } else {
+                btn.style.background = 'rgba(239, 68, 68, 0.2)';
+                btn.style.borderColor = '#EF4444';
+                btn.style.color = '#EF4444';
+              }
+              if (expEl) {
+                expEl.style.display = 'block';
+                expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+                expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
+                expEl.style.color = 'var(--text-primary)';
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+              }
+            });
+          });
+        });
+      }, 0);
+    }
+
+    // 1. Predict the Output Quiz
+    if (content.predictOutput && content.predictOutput.length > 0) {
+      const quizSec = document.createElement('section');
+      quizSec.className = 'lesson-section reveal-on-scroll';
+      quizSec.id = 'section-predict-output';
+      
+      const cards = content.predictOutput.map((q, idx) => `
+        <div class="quiz-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px; margin-bottom:16px;">
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:10px; font-size:0.98rem;">
+            Question ${idx + 1}: What is the output of this code?
+          </div>
+          <pre class="code-block" style="margin-bottom:14px;"><code>${escapeHtml(q.code)}</code></pre>
+          <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            ${q.options.map(opt => `
+              <button class="quiz-opt-btn" data-correct="${opt === q.answer}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-family:'Fira Code',monospace; font-size:0.88rem; transition:all 0.2s ease;">
+                ${escapeHtml(opt)}
+              </button>
+            `).join('')}
+          </div>
+          <div class="quiz-explanation" style="display:none; padding:12px 16px; border-radius:8px; font-size:0.9rem; line-height:1.6; margin-top:10px;">
+          </div>
+        </div>
+      `).join('');
+
+      quizSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionNum++}. Predict the Output Quiz</h2>
+        <div class="lesson-section__body">${cards}</div>
+      `;
+      panel.appendChild(quizSec);
+
+      setTimeout(() => {
+        quizSec.querySelectorAll('.quiz-card').forEach((card, qIdx) => {
+          const qData = content.predictOutput[qIdx];
+          const expEl = card.querySelector('.quiz-explanation');
+          card.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              card.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                b.style.pointerEvents = 'none';
+                if (b.getAttribute('data-correct') === 'true') {
+                  b.style.background = 'rgba(16, 185, 129, 0.2)';
+                  b.style.borderColor = '#10B981';
+                  b.style.color = '#10B981';
+                } else {
+                  b.style.opacity = '0.5';
+                }
+              });
+              const isCorrect = btn.getAttribute('data-correct') === 'true';
+              if (isCorrect) {
+                btn.style.background = 'rgba(16, 185, 129, 0.25)';
+                btn.style.borderColor = '#10B981';
+              } else {
+                btn.style.background = 'rgba(239, 68, 68, 0.2)';
+                btn.style.borderColor = '#EF4444';
+                btn.style.color = '#EF4444';
+              }
+              if (expEl) {
+                expEl.style.display = 'block';
+                expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+                expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
+                expEl.style.color = 'var(--text-primary)';
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+              }
+            });
+          });
+        });
+      }, 0);
+    }
+
     if (content.practice) {
       const practiceSec = document.createElement('section');
       practiceSec.className = 'lesson-section reveal-on-scroll';
@@ -1301,6 +1672,48 @@
         </div>
       `;
       panel.appendChild(challengeSec);
+    }
+
+    // Interview Questions Accordion
+    if (content.interviewQuestions && content.interviewQuestions.length > 0) {
+      const iqSec = document.createElement('section');
+      iqSec.className = 'lesson-section reveal-on-scroll';
+      iqSec.id = 'section-interview-questions';
+
+      const cards = content.interviewQuestions.map((iq, idx) => `
+        <div class="interview-q-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:10px; padding:16px 20px; margin-bottom:12px;">
+          <div class="interview-q-header" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+            <div style="font-weight:700; color:var(--text-primary); font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+              <span style="color:var(--accent-primary);">Q${idx + 1}.</span> ${escapeHtml(iq.q)}
+            </div>
+            <span class="interview-q-chevron" style="transition:transform 0.2s ease; color:var(--text-muted);">${SVG_ICONS.chevronDown}</span>
+          </div>
+          <div class="interview-q-answer" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary); line-height:1.65; font-size:0.92rem;">
+            ${iq.a}
+          </div>
+        </div>
+      `).join('');
+
+      iqSec.innerHTML = `
+        <h2 class="lesson-section__title">${sectionNum++}. Interview Questions You Should Be Able to Answer</h2>
+        <div class="lesson-section__body">${cards}</div>
+      `;
+      panel.appendChild(iqSec);
+
+      setTimeout(() => {
+        iqSec.querySelectorAll('.interview-q-header').forEach(hdr => {
+          hdr.addEventListener('click', () => {
+            const card = hdr.closest('.interview-q-card');
+            const ans = card.querySelector('.interview-q-answer');
+            const chev = card.querySelector('.interview-q-chevron');
+            if (ans) {
+              const isHidden = ans.style.display === 'none';
+              ans.style.display = isHidden ? 'block' : 'none';
+              if (chev) chev.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+          });
+        });
+      }, 0);
     }
 
     if (content.leetcodePractice || content.generalSortingPractice) {
@@ -1587,9 +2000,154 @@
       activeWidgetCleanup = mountStackWidget(container);
     } else if (wType === 'queue') {
       activeWidgetCleanup = mountQueueWidget(container);
+    } else if (wType === 'memory-playground') {
+      activeWidgetCleanup = mountMemoryPlayground(container);
     } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
       renderAlgoVisualizer(container, wType);
     }
+  }
+
+  function mountMemoryPlayground(container) {
+    let currentStep = 0;
+    const scenarios = [
+      {
+        title: "Scenario 1: Primitive Value Copy",
+        code: `let a = 10;\nlet b = a;\nb = 20;`,
+        desc: "Primitive values (numbers, booleans) are copied by value directly. Modifying b does not affect a.",
+        visualHtml: `
+          <div style="display:flex; justify-content:space-around; align-items:center; gap:20px; flex-wrap:wrap;">
+            <div style="background:var(--bg-surface); padding:16px 24px; border-radius:10px; border:2px solid var(--accent-primary); text-align:center; min-width:140px;">
+              <div style="font-weight:700; color:var(--accent-primary); margin-bottom:6px;">Variable a</div>
+              <div style="font-size:1.4rem; font-weight:800; color:var(--text-primary); font-family:'Fira Code',monospace;">10</div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Stack Slot A</div>
+            </div>
+            <div style="font-size:1.5rem; color:var(--text-muted);">│</div>
+            <div style="background:var(--bg-surface); padding:16px 24px; border-radius:10px; border:2px solid #34D399; text-align:center; min-width:140px;">
+              <div style="font-weight:700; color:#34D399; margin-bottom:6px;">Variable b</div>
+              <div style="font-size:1.4rem; font-weight:800; color:#34D399; font-family:'Fira Code',monospace;">20</div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Independent Stack Slot B</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: "Scenario 2: Object Reference Pointer Copy",
+        code: `let user1 = { name: "Alice" };\nlet user2 = user1;\nuser2.name = "Bob";`,
+        desc: "Object variables hold reference pointers to heap memory. Assigning user2 = user1 copies the reference pointer, so user1 and user2 point to the SAME heap object!",
+        visualHtml: `
+          <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+            <div style="display:flex; gap:24px;">
+              <div style="background:var(--bg-surface); padding:12px 20px; border-radius:8px; border:2px solid var(--accent-primary); text-align:center;">
+                <span style="font-weight:700; color:var(--accent-primary);">user1</span> (ref: 0x4F1)
+              </div>
+              <div style="background:var(--bg-surface); padding:12px 20px; border-radius:8px; border:2px solid #F472B6; text-align:center;">
+                <span style="font-weight:700; color:#F472B6;">user2</span> (ref: 0x4F1)
+              </div>
+            </div>
+            <div style="font-size:1.2rem; color:var(--accent-secondary);">↓↓ Both Point to Same Pointer ↓↓</div>
+            <div style="background:rgba(0,201,167,0.12); padding:18px 30px; border-radius:12px; border:2px solid var(--accent-secondary); text-align:center;">
+              <div style="font-size:0.8rem; font-weight:700; color:var(--accent-secondary); margin-bottom:4px;">HEAP OBJECT [ Address: 0x4F1 ]</div>
+              <div style="font-size:1.2rem; font-weight:800; font-family:'Fira Code',monospace; color:var(--text-primary);">{ name: "Bob" }</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: "Scenario 3: Reassignment vs Mutation",
+        code: `let user1 = { name: "Alice" };\nlet user2 = user1;\nuser2 = { name: "Bob" }; // Reassigning reference binding`,
+        desc: "Reassigning user2 = { name: 'Bob' } creates a NEW heap object and updates user2's pointer to point to the new object. user1 still points to Object A!",
+        visualHtml: `
+          <div style="display:flex; justify-content:space-around; align-items:center; gap:20px; flex-wrap:wrap;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="background:var(--bg-surface); padding:10px 18px; border-radius:8px; border:2px solid var(--accent-primary);">
+                <span style="font-weight:700; color:var(--accent-primary);">user1</span> (ref: 0x01)
+              </div>
+              <div style="font-size:1rem; color:var(--text-muted);">↓</div>
+              <div style="background:var(--bg-surface); padding:14px 20px; border-radius:10px; border:1px solid var(--border-default); text-align:center;">
+                <strong>Heap Object A:</strong><br/><span style="font-family:'Fira Code',monospace;">{ name: "Alice" }</span>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="background:var(--bg-surface); padding:10px 18px; border-radius:8px; border:2px solid #F472B6;">
+                <span style="font-weight:700; color:#F472B6;">user2</span> (ref: 0x02)
+              </div>
+              <div style="font-size:1rem; color:var(--text-muted);">↓</div>
+              <div style="background:var(--bg-surface); padding:14px 20px; border-radius:10px; border:1px solid #F472B6; text-align:center;">
+                <strong>Heap Object B (New):</strong><br/><span style="font-family:'Fira Code',monospace;">{ name: "Bob" }</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: "Scenario 4: Call Stack Execution",
+        code: `function first() { second(); }\nfunction second() { third(); }\nfunction third() { console.log("Done"); }`,
+        desc: "Each function call pushes a frame onto the Call Stack. When third() finishes, its frame pops off, returning execution to second(), then first().",
+        visualHtml: `
+          <div style="display:flex; flex-direction:column; align-items:center; gap:6px; max-width:280px; margin:0 auto;">
+            <div style="width:100%; padding:10px; background:rgba(239,68,68,0.15); border:1px solid #EF4444; border-radius:6px; text-align:center; font-family:'Fira Code',monospace; font-weight:700; color:#EF4444;">
+              [ Frame 3: third() ] (Top - Active)
+            </div>
+            <div style="width:100%; padding:10px; background:rgba(245,158,11,0.15); border:1px solid #F59E0B; border-radius:6px; text-align:center; font-family:'Fira Code',monospace; font-weight:600; color:#F59E0B;">
+              [ Frame 2: second() ]
+            </div>
+            <div style="width:100%; padding:10px; background:rgba(59,130,246,0.15); border:1px solid #3B82F6; border-radius:6px; text-align:center; font-family:'Fira Code',monospace; font-weight:600; color:#3B82F6;">
+              [ Frame 1: first() ]
+            </div>
+            <div style="width:100%; padding:8px; background:var(--bg-body); border:1px solid var(--border-default); border-radius:6px; text-align:center; font-size:0.78rem; color:var(--text-muted);">
+              [ Global Frame ]
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    function renderScenarios() {
+      container.innerHTML = `
+        <div class="interactive-widget" style="background:var(--bg-body); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <div style="font-weight:700; font-size:1.05rem; color:var(--accent-primary);">
+              🧠 Interactive Memory Playground
+            </div>
+            <div style="display:flex; gap:8px;">
+              ${scenarios.map((s, idx) => `
+                <button class="btn ${idx === currentStep ? 'btn--primary' : 'btn--secondary'} btn-sc-step" data-step="${idx}" style="font-size:0.8rem; padding:4px 10px;">
+                  Step ${idx + 1}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div style="font-weight:700; color:var(--text-primary); font-size:0.98rem; margin-bottom:8px;">
+            ${escapeHtml(scenarios[currentStep].title)}
+          </div>
+
+          <pre class="code-block" style="margin-bottom:14px;"><code>${escapeHtml(scenarios[currentStep].code)}</code></pre>
+
+          <div style="background:var(--bg-surface); padding:16px; border-radius:10px; border:1px solid var(--border-default); margin-bottom:14px;">
+            ${scenarios[currentStep].visualHtml}
+          </div>
+
+          <div style="font-size:0.9rem; color:var(--text-secondary); line-height:1.6; background:var(--accent-gradient-subtle); padding:12px 16px; border-radius:8px; border:1px solid var(--border-accent);">
+            💡 <strong>Explanation:</strong> ${escapeHtml(scenarios[currentStep].desc)}
+          </div>
+        </div>
+      `;
+
+      container.querySelectorAll('.btn-sc-step').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentStep = parseInt(btn.getAttribute('data-step'), 10);
+          renderScenarios();
+        });
+      });
+    }
+
+    renderScenarios();
+
+    return () => {
+      container.innerHTML = '';
+    };
   }
 
   function mountStackWidget(container) {
@@ -1831,23 +2389,36 @@
     let tocHTML = `<span class="lesson-toc__title">On this page:</span><ul class="lesson-toc__list">`;
 
     if (tab === 'concept') {
-      tocHTML += `
-        ${content.whyMatters ? '<li><a href="#section-why-matters" class="lesson-toc__link">Why This Actually Matters</a></li>' : ''}
-        ${content.definitions ? '<li><a href="#section-definitions" class="lesson-toc__link">Key Definitions</a></li>' : ''}
-        ${content.notations ? '<li><a href="#section-interactive-notations" class="lesson-toc__link">Big-O Explorer</a></li>' : ''}
-        ${content.workedExample ? '<li><a href="#section-worked-example" class="lesson-toc__link">Worked Example</a></li>' : ''}
-        ${content.visual || content.combinedChartSvg ? '<li><a href="#section-visual-diagram" class="lesson-toc__link">Visual Diagram</a></li>' : ''}
-        ${content.interactiveWidget ? '<li><a href="#section-interactive-widget" class="lesson-toc__link">Interactive Widget</a></li>' : ''}
-        ${content.codeSnippet ? '<li><a href="#section-code-snippet" class="lesson-toc__link">Code Snippet</a></li>' : ''}
-        ${content.complexityNotes ? '<li><a href="#section-complexity-notes" class="lesson-toc__link">Complexity Notes</a></li>' : ''}
-        ${content.commonMistakes ? '<li><a href="#section-common-mistakes" class="lesson-toc__link">Common Mistakes</a></li>' : ''}
-        ${content.realWorldDsa ? '<li><a href="#section-real-world-dsa" class="lesson-toc__link">Real-World DSA You Already Use</a></li>' : ''}
-        ${content.historyFact ? '<li><a href="#section-history-fact" class="lesson-toc__link">A Bit of History</a></li>' : ''}
-      `;
+      if (content.sections && Array.isArray(content.sections)) {
+        content.sections.forEach(sec => {
+          tocHTML += `<li><a href="#${sec.id}" class="lesson-toc__link">${escapeHtml(sec.tocTitle || sec.title)}</a></li>`;
+        });
+      } else {
+        tocHTML += `
+          ${content.definitions ? '<li><a href="#section-definitions" class="lesson-toc__link">Key Definitions</a></li>' : ''}
+          ${content.whyMatters ? '<li><a href="#section-why-matters" class="lesson-toc__link">Why This Actually Matters</a></li>' : ''}
+          ${content.bigPicture ? '<li><a href="#section-big-picture" class="lesson-toc__link">The Big Picture</a></li>' : ''}
+          ${content.notations ? '<li><a href="#section-interactive-notations" class="lesson-toc__link">Big-O Explorer</a></li>' : ''}
+          ${content.workedExample ? '<li><a href="#section-worked-example" class="lesson-toc__link">Worked Example</a></li>' : ''}
+          ${content.visual || content.combinedChartSvg ? '<li><a href="#section-visual-diagram" class="lesson-toc__link">Visual Diagram</a></li>' : ''}
+          ${content.interactiveWidget ? '<li><a href="#section-interactive-widget" class="lesson-toc__link">Interactive Widget</a></li>' : ''}
+          ${content.codeSnippet ? '<li><a href="#section-code-snippet" class="lesson-toc__link">Code Snippet</a></li>' : ''}
+          ${content.complexityNotes ? '<li><a href="#section-complexity-notes" class="lesson-toc__link">Complexity Notes</a></li>' : ''}
+          ${content.tradeOffs ? '<li><a href="#section-trade-offs" class="lesson-toc__link">Trade-offs</a></li>' : ''}
+          ${content.commonMistakes ? '<li><a href="#section-common-mistakes" class="lesson-toc__link">Common Mistakes</a></li>' : ''}
+          ${content.realWorldDsa ? '<li><a href="#section-real-world-dsa" class="lesson-toc__link">Real-World DSA You Already Use</a></li>' : ''}
+          ${content.historyFact ? '<li><a href="#section-history-fact" class="lesson-toc__link">A Bit of History</a></li>' : ''}
+          ${content.languageAgnostic ? '<li><a href="#section-language-agnostic" class="lesson-toc__link">DSA Is Language-Agnostic</a></li>' : ''}
+        `;
+      }
     } else {
       tocHTML += `
+        ${content.questionSuite ? '<li><a href="#section-question-suite" class="lesson-toc__link">Questions Suite</a></li>' : ''}
+        ${content.miniQuiz ? '<li><a href="#section-mini-quiz" class="lesson-toc__link">Beginner Concept Quiz</a></li>' : ''}
+        ${content.predictOutput ? '<li><a href="#section-predict-output" class="lesson-toc__link">Predict the Output</a></li>' : ''}
         ${content.practice ? '<li><a href="#section-practice-questions" class="lesson-toc__link">Practice Questions</a></li>' : ''}
         ${content.challenge ? '<li><a href="#section-challenge-problem" class="lesson-toc__link">Challenge Problem</a></li>' : ''}
+        ${content.interviewQuestions ? '<li><a href="#section-interview-questions" class="lesson-toc__link">Interview Questions</a></li>' : ''}
         ${(content.leetcodePractice || content.generalSortingPractice) ? '<li><a href="#section-leetcode-practice" class="lesson-toc__link">LeetCode Practice</a></li>' : ''}
       `;
     }
@@ -1881,7 +2452,7 @@
 
     const elements = activePanel.querySelectorAll('.reveal-on-scroll');
 
-    if (isReducedMotion || !('IntersectionObserver' in window)) {
+    if (isReducedMotion || tab === 'questions' || !('IntersectionObserver' in window)) {
       elements.forEach(el => el.classList.add('is-revealed'));
       return;
     }
@@ -2807,10 +3378,10 @@
       if (crossLink) {
         e.preventDefault();
         const targetTopicId = crossLink.getAttribute('data-topic');
-        if (targetTopicId && isCompleted(targetTopicId)) {
+        if (targetTopicId && isTopicUnlocked(targetTopicId)) {
           openLesson(targetTopicId);
         } else if (targetTopicId) {
-          showToast('Locked — complete previous topics first.');
+          showToast('Coming Soon — Content preparation in progress.');
         }
         return;
       }
