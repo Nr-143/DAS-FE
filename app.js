@@ -91,12 +91,11 @@
   try {
     if (_storedUserRaw) _storedUser = JSON.parse(_storedUserRaw);
   } catch (e) {}
-  const _hasSession = localStorage.getItem('dsa_has_session') === 'true';
 
   let authState = {
     user: _storedUser,
     accessToken: _storedToken || null,
-    isLoggedIn: !!(_storedToken && _hasSession)
+    isLoggedIn: !!(_storedToken && _storedUser)
   };
 
   let pendingAction = null;
@@ -169,12 +168,22 @@
   }
 
   async function initAuthSession() {
-    const hasSessionFlag = localStorage.getItem('dsa_has_session') === 'true';
-    const tokenExists = !!(localStorage.getItem('dsa_access_token') || sessionStorage.getItem('dsa_access_token'));
+    const storedToken = localStorage.getItem('dsa_access_token') || sessionStorage.getItem('dsa_access_token');
+    const storedUserRaw = localStorage.getItem('dsa_user');
 
-    if (!hasSessionFlag && !tokenExists) {
+    if (!storedToken && !storedUserRaw) {
       clearAuthState();
       return;
+    }
+
+    // Restore state from stored user & token immediately so hard refresh preserves auth state!
+    if (storedToken && storedUserRaw) {
+      try {
+        authState.user = JSON.parse(storedUserRaw);
+        authState.accessToken = storedToken;
+        authState.isLoggedIn = true;
+        renderHeaderAuthUI();
+      } catch (e) {}
     }
 
     try {
@@ -194,12 +203,18 @@
         localStorage.setItem('dsa_has_session', 'true');
         renderHeaderAuthUI();
         await syncProgressWithServer();
+      } else if (authState.accessToken) {
+        // Access token exists in localStorage, sync progress to verify session validity
+        await syncProgressWithServer();
       } else {
-        // Refresh token invalid or expired -> clear session silently
         clearAuthState();
       }
     } catch (err) {
-      clearAuthState();
+      if (authState.accessToken) {
+        await syncProgressWithServer();
+      } else {
+        clearAuthState();
+      }
     }
   }
 
@@ -466,7 +481,20 @@
     }
   }
 
+  function renderInitialLoader() {
+    if ($main) {
+      $main.innerHTML = `
+        <div class="app-initial-loader">
+          <div class="app-loader-spinner"></div>
+          <div class="app-loader-title">Loading OneStep Journey...</div>
+          <div class="app-loader-sub">Preparing your DSA learning space</div>
+        </div>
+      `;
+    }
+  }
+
   async function boot() {
+    renderInitialLoader();
     initTheme();
     await loadClientConfig();
     await loadTopics();
