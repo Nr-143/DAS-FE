@@ -19,7 +19,7 @@
  * - Bridge to Page 5: Function Calls
  */
 
-window.updateObjPlayground = function(action) {
+window.updateObjPlayground = function (action) {
   var el = document.getElementById('obj-playground-content');
   if (!el) return;
   if (action === 'change') {
