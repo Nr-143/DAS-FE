@@ -6,7 +6,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 1,
-      "completed": false
+      "completed": true
     },
     {
       "id": "variables-and-memory",
@@ -14,7 +14,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 2,
-      "completed": false
+      "completed": true
     },
     {
       "id": "primitives",
@@ -22,7 +22,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 3,
-      "completed": false
+      "completed": true
     },
     {
       "id": "objects",
@@ -30,7 +30,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 4,
-      "completed": false
+      "completed": true
     },
     {
       "id": "function-calls",
@@ -38,7 +38,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 5,
-      "completed": false
+      "completed": true
     },
     {
       "id": "recursion",
@@ -46,7 +46,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 6,
-      "completed": false
+      "completed": true
     },
     {
       "id": "time-complexity",
@@ -54,42 +54,42 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 7,
-      "completed": false,
+      "completed": true,
       "subtopics": [
         {
           "id": "big-o-1",
           "title": "O(1)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-log-n",
           "title": "O(log n)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-n",
           "title": "O(n)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-n-log-n",
           "title": "O(n log n)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-n2",
           "title": "O(n²)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-2n",
           "title": "O(2ⁿ)",
-          "completed": false
+          "completed": true
         },
         {
           "id": "big-o-n-factorial",
           "title": "O(n!)",
-          "completed": false
+          "completed": true
         }
       ]
     },
@@ -99,7 +99,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 8,
-      "completed": false
+      "completed": true
     },
     {
       "id": "control-flow",
@@ -107,7 +107,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 9,
-      "completed": false
+      "completed": true
     },
     {
       "id": "core-builtins",
@@ -115,7 +115,7 @@
       "level": 1,
       "levelTitle": "Foundations",
       "order": 10,
-      "completed": false
+      "completed": true
     },
     {
       "id": "es6-plus",
@@ -131,7 +131,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 12,
-      "completed": true
+      "completed": false
     },
     {
       "id": "strings",
@@ -139,7 +139,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 13,
-      "completed": true
+      "completed": false
     },
     {
       "id": "linked-list-singly",
@@ -147,7 +147,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 14,
-      "completed": true
+      "completed": false
     },
     {
       "id": "linked-list-doubly",
@@ -155,7 +155,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 15,
-      "completed": true
+      "completed": false
     },
     {
       "id": "stack",
@@ -163,7 +163,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 16,
-      "completed": true
+      "completed": false
     },
     {
       "id": "queue",
@@ -171,7 +171,7 @@
       "level": 2,
       "levelTitle": "Linear Data Structures",
       "order": 17,
-      "completed": true
+      "completed": false
     },
     {
       "id": "linear-search",
@@ -179,7 +179,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 18,
-      "completed": true
+      "completed": false
     },
     {
       "id": "binary-search",
@@ -187,7 +187,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 19,
-      "completed": true
+      "completed": false
     },
     {
       "id": "bubble-sort",
@@ -195,7 +195,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 20,
-      "completed": true
+      "completed": false
     },
     {
       "id": "selection-sort",
@@ -203,7 +203,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 21,
-      "completed": true
+      "completed": false
     },
     {
       "id": "insertion-sort",
@@ -211,7 +211,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 22,
-      "completed": true
+      "completed": false
     },
     {
       "id": "merge-sort",
@@ -219,7 +219,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 23,
-      "completed": true
+      "completed": false
     },
     {
       "id": "quick-sort",
@@ -227,7 +227,7 @@
       "level": 3,
       "levelTitle": "Searching & Sorting",
       "order": 24,
-      "completed": true
+      "completed": false
     },
     {
       "id": "hash-table",

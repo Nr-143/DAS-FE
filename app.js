@@ -39,8 +39,8 @@
   const STORAGE_KEY_PROGRESS = 'dsa-tracker-progress-v2';
   const STORAGE_KEY_THEME = 'dsa-tracker-theme';
   const IS_LOCAL_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const API_BASE = (window.ENV && window.ENV.API_BASE_URL) 
-    ? window.ENV.API_BASE_URL 
+  const API_BASE = (window.ENV && window.ENV.API_BASE_URL)
+    ? window.ENV.API_BASE_URL
     : (IS_LOCAL_HOST ? 'http://localhost:3001/api' : 'https://dsa-be-i1c6.onrender.com/api');
   const GOOGLE_CLIENT_ID = (window.ENV && window.ENV.GOOGLE_CLIENT_ID) || '';
   const TOAST_DURATION = 2400;
@@ -90,7 +90,7 @@
   let _storedUser = null;
   try {
     if (_storedUserRaw) _storedUser = JSON.parse(_storedUserRaw);
-  } catch (e) {}
+  } catch (e) { }
 
   let authState = {
     user: _storedUser,
@@ -183,7 +183,7 @@
         authState.accessToken = storedToken;
         authState.isLoggedIn = true;
         renderHeaderAuthUI();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     try {
@@ -367,7 +367,7 @@
   ──────────────────────────────────────────── */
   function updateRouterState(view, topicId = null, tab = null, pushHistory = true) {
     const url = new URL(window.location.href);
-    
+
     if (view === 'leetcode') {
       url.searchParams.set('view', 'leetcode');
       url.searchParams.delete('topic');
@@ -571,7 +571,7 @@
   function isTopicUnlocked(topicId) {
     const topic = topicsData.find(t => t.id === topicId);
     if (!topic) return false;
-    return topic.order <= 6;
+    return topic.order <= 8;
   }
 
   function render() {
@@ -1139,18 +1139,21 @@
   function renderConceptPanelSections(content, panel, topicId) {
     let sectionCount = 1;
 
-    // 0. Custom Structured Sections Array (Variables & Memory)
+    // 0. Custom Structured Sections Array
     if (content.sections && Array.isArray(content.sections)) {
       content.sections.forEach(sec => {
         const s = document.createElement('section');
         s.className = 'lesson-section reveal-on-scroll';
         s.id = sec.id;
         s.innerHTML = `
-          <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(sec.title)}</h2>
+          <h2 class="lesson-section__title">${sec.title}</h2>
           <div class="lesson-section__body">${sec.contentHtml}</div>
         `;
         panel.appendChild(s);
       });
+      if (typeof content.onMount === 'function') {
+        setTimeout(() => { content.onMount(panel); }, 50);
+      }
       return;
     }
 
@@ -1506,12 +1509,11 @@
                 <span style="font-weight:700; color:var(--text-primary); font-size:0.98rem;">
                   Question ${idx + 1} of ${content.questionSuite.length}
                 </span>
-                <span class="badge" style="padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; ${
-                  q.difficulty === 'Easy' ? 'background:rgba(52,211,153,0.15); color:#34D399; border:1px solid #34D399;' :
-                  q.difficulty === 'Medium' ? 'background:rgba(96,165,250,0.15); color:#60A5FA; border:1px solid #60A5FA;' :
-                  q.difficulty === 'Hard' ? 'background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid #EF4444;' :
-                  'background:rgba(167,139,250,0.15); color:#A78BFA; border:1px solid #A78BFA;'
-                }">
+                <span class="badge" style="padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; ${q.difficulty === 'Easy' ? 'background:rgba(52,211,153,0.15); color:#34D399; border:1px solid #34D399;' :
+          q.difficulty === 'Medium' ? 'background:rgba(96,165,250,0.15); color:#60A5FA; border:1px solid #60A5FA;' :
+            q.difficulty === 'Hard' ? 'background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid #EF4444;' :
+              'background:rgba(167,139,250,0.15); color:#A78BFA; border:1px solid #A78BFA;'
+        }">
                   ${q.difficulty}
                 </span>
               </div>
@@ -1524,14 +1526,14 @@
 
               <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
                 ${q.options.map(opt => {
-                  const letter = opt.trim().substring(0, 1);
-                  const isCorrect = letter === q.answer || opt === q.answer;
-                  return `
+          const letter = opt.trim().substring(0, 1);
+          const isCorrect = letter === q.answer || opt === q.answer;
+          return `
                     <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
                       ${escapeHtml(opt)}
                     </button>
                   `;
-                }).join('')}
+        }).join('')}
               </div>
 
               <div class="quiz-explanation" style="display:none; padding:12px 16px; border-radius:8px; font-size:0.9rem; line-height:1.6; margin-top:10px;">
@@ -1614,14 +1616,14 @@
           </div>
           <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
             ${q.options.map(opt => {
-              const letter = opt.trim().substring(0, 1);
-              const isCorrect = letter === q.answer || opt === q.answer;
-              return `
+        const letter = opt.trim().substring(0, 1);
+        const isCorrect = letter === q.answer || opt === q.answer;
+        return `
                 <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
                   ${escapeHtml(opt)}
                 </button>
               `;
-            }).join('')}
+      }).join('')}
           </div>
           <div class="quiz-explanation" style="display:none; padding:12px 16px; border-radius:8px; font-size:0.9rem; line-height:1.6; margin-top:10px;">
           </div>
@@ -1677,7 +1679,7 @@
       const quizSec = document.createElement('section');
       quizSec.className = 'lesson-section reveal-on-scroll';
       quizSec.id = 'section-predict-output';
-      
+
       const cards = content.predictOutput.map((q, idx) => `
         <div class="quiz-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px; margin-bottom:16px;">
           <div style="font-weight:700; color:var(--text-primary); margin-bottom:10px; font-size:0.98rem;">
@@ -3626,7 +3628,7 @@
     }
   }
 
-  window.handleGoogleSignInCallback = async function(response) {
+  window.handleGoogleSignInCallback = async function (response) {
     if (response && response.credential) {
       await processGoogleLogin({ credential: response.credential });
     }
@@ -3772,7 +3774,7 @@
     // Topic Filter Select (Only unlocked topics are selectable)
     const topicFilterDiv = document.createElement('div');
     topicFilterDiv.className = 'leetcode-filter-group';
-    
+
     const topicSelectHTML = [
       `<option value="all" ${leetcodeState.topic === 'all' ? 'selected' : ''}>All Topics</option>`,
       ...topicsData.map(t => {
@@ -3939,7 +3941,7 @@
     const cardsHTML = problems.map(problem => {
       const diffClass = problem.difficulty === 'Easy' ? 'badge--easy' : (problem.difficulty === 'Medium' ? 'badge--medium' : 'badge--hard');
       const diffDot = problem.difficulty === 'Easy' ? '🟢' : (problem.difficulty === 'Medium' ? '🟡' : '🔴');
-      
+
       const mappedTopicTitles = (problem.topics || []).map(tid => {
         const t = topicsData.find(x => x.id === tid);
         return t ? t.title : tid;
