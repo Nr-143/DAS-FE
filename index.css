@@ -3691,17 +3691,238 @@ svg {
   font-size: 0.9rem;
 }
 
+/* ============================================================
+   Comprehensive Mobile Responsiveness & Fixes (Max-width <= 640px)
+   ============================================================ */
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.app-container, .content-area, .main-content, .tab-panel, .lesson-page {
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
 @media (max-width: 640px) {
-  .tc-quiz-opts {
-    grid-template-columns: 1fr;
+  /* ---------- Header Mobile Fixes ---------- */
+  .header {
+    padding: 0 10px !important;
+    gap: 6px !important;
+    height: 56px !important;
   }
-  .tc-mem-split {
-    grid-template-columns: 1fr;
+
+  .header__left {
+    gap: 6px !important;
   }
-  .tc-grid-3, .tc-grid-2 {
-    grid-template-columns: 1fr;
+
+  .header__logo-text {
+    font-size: 0.95rem !important;
+  }
+
+  .header__logo-img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .header__actions {
+    gap: 6px !important;
+  }
+
+  .user-auth-pill {
+    max-width: 140px !important;
+    padding: 2px 6px !important;
+    gap: 4px !important;
+  }
+
+  .user-email-text {
+    display: none !important; /* Hide long email on small screens to prevent header overflow */
+  }
+
+  .btn-logout-sm {
+    padding: 3px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .btn-login-sm {
+    padding: 5px 12px !important;
+    font-size: 0.78rem !important;
+  }
+
+  #btn-theme {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  .sidebar-toggle-btn {
+    padding: 6px !important;
+  }
+
+  /* ---------- Content & Layout Padding ---------- */
+  .progress-section {
+    padding: 12px 12px 0 !important;
+  }
+
+  .progress-label {
+    font-size: 0.78rem !important;
+  }
+
+  .main-content {
+    padding: 14px 10px !important;
+  }
+
+  /* ---------- Lesson Header & Breadcrumb ---------- */
+  .lesson-breadcrumb {
+    flex-wrap: wrap !important;
+    font-size: 0.78rem !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .lesson-header__title {
+    font-size: 1.3rem !important;
+    line-height: 1.3 !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  .lesson-header__summary {
+    font-size: 0.88rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* ---------- Lesson TOC Strip (Horizontal Scroll) ---------- */
+  .lesson-toc {
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    padding: 6px 10px !important;
+    margin-bottom: 16px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .lesson-toc__title {
+    font-size: 0.75rem !important;
+    flex-shrink: 0;
+  }
+
+  .lesson-toc__list {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+  }
+
+  .lesson-toc__link {
+    font-size: 0.78rem !important;
+    padding: 3px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* ---------- Cards & Containers ---------- */
+  .tc-hero-card, .tc-card {
+    padding: 16px 12px !important;
+    margin-bottom: 14px !important;
+    border-radius: 12px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .tc-hero-headline {
+    font-size: 1.18rem !important;
+    line-height: 1.35 !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  .tc-hero-sub {
+    font-size: 0.88rem !important;
+    margin-bottom: 14px !important;
+  }
+
+  .tc-flowchart {
+    max-width: 100% !important;
+  }
+
+  .tc-flow-step {
+    padding: 8px 12px !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* ---------- Cheat Ladder Row Stacking ---------- */
+  .tc-cheat-ladder {
+    gap: 8px !important;
+  }
+
+  .tc-ladder-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    padding: 10px 12px !important;
+  }
+
+  .tc-ladder-row span {
+    min-width: auto !important;
+    font-size: 0.92rem !important;
+  }
+
+  /* ---------- Quiz & Options ---------- */
+  .tc-quiz-opts, .quiz-options {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .tc-q-opt, .quiz-opt-btn {
+    padding: 10px 12px !important;
+    font-size: 0.85rem !important;
+    width: 100% !important;
+  }
+
+  /* ---------- Tables & Grids ---------- */
+  .tc-comp-table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tc-grid-3, .tc-grid-2, .tc-mem-split {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .tc-matrix {
+    justify-content: center !important;
+  }
+
+  /* ---------- Code Blocks ---------- */
+  .code-block, pre {
+    padding: 12px 10px !important;
+    font-size: 0.82rem !important;
+    overflow-x: auto !important;
+    white-space: pre !important;
+    max-width: 100% !important;
+  }
+
+  /* ---------- Footer Navigation Buttons ---------- */
+  .lesson-footer {
+    margin-top: 24px !important;
+    gap: 14px !important;
+  }
+
+  #btn-prev-topic, #btn-next-topic {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.85rem !important;
+    padding: 10px 14px !important;
   }
 }
+
 
 
 
