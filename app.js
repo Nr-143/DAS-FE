@@ -571,7 +571,7 @@
   function isTopicUnlocked(topicId) {
     const topic = topicsData.find(t => t.id === topicId);
     if (!topic) return false;
-    return topic.order <= 8;
+    return topic.order <= 10;
   }
 
   function render() {
@@ -882,7 +882,12 @@
   }
 
   function renderLessonPage(topicId) {
-    const content = window.LESSONS_CONTENT ? window.LESSONS_CONTENT[topicId] : null;
+    const content = window.LESSONS_CONTENT ? (
+      window.LESSONS_CONTENT[topicId] ||
+      window.LESSONS_CONTENT[topicId.replace(/-/g, '')] ||
+      window.LESSONS_CONTENT[topicId.replace('core-builtins', 'core-built-ins')] ||
+      window.LESSONS_CONTENT[topicId.replace('variables-and-memory', 'variables-memory')]
+    ) : null;
     const topic = topicsData.find(t => t.id === topicId);
 
     if (!isTopicUnlocked(topicId)) {
@@ -1012,6 +1017,7 @@
 
     $main.innerHTML = '';
     $main.appendChild(container);
+    enhanceCodeBlocks(container);
 
     // Bind Breadcrumb return link
     document.getElementById('bc-grid-link').addEventListener('click', (e) => {
@@ -2117,10 +2123,1064 @@
       activeWidgetCleanup = mountQueueWidget(container);
     } else if (wType === 'memory-playground') {
       activeWidgetCleanup = mountMemoryPlayground(container);
+    } else if (wType === 'primitives-visualizer') {
+      activeWidgetCleanup = mountPrimitivesVisualizer(container);
+    } else if (wType === 'objects-visualizer') {
+      activeWidgetCleanup = mountObjectsVisualizer(container);
+    } else if (wType === 'functions-visualizer') {
+      activeWidgetCleanup = mountFunctionsVisualizer(container);
+    } else if (wType === 'recursion-visualizer') {
+      activeWidgetCleanup = mountRecursionVisualizer(container);
+    } else if (wType === 'control-flow-visualizer') {
+      activeWidgetCleanup = mountControlFlowVisualizer(container);
+    } else if (wType === 'core-builtins-visualizer') {
+      activeWidgetCleanup = mountCoreBuiltInsVisualizer(container);
+    } else if (wType === 'space-complexity-visualizer') {
+      activeWidgetCleanup = mountSpaceComplexityVisualizer(container);
+    } else if (wType === 'dsa-intro-visualizer') {
+      activeWidgetCleanup = mountDSAIntroVisualizer(container);
     } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
       renderAlgoVisualizer(container, wType);
     }
   }
+
+  function enhanceCodeBlocks(container) {
+    if (!container) return;
+    container.querySelectorAll('pre.code-block').forEach(pre => {
+      if (pre.querySelector('.btn-copy-code')) return;
+      pre.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.className = 'btn-copy-code';
+      btn.type = 'button';
+      btn.innerHTML = `${SVG_ICONS.penTool || ''} Copy`;
+      
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const codeEl = pre.querySelector('code') || pre;
+        const codeText = codeEl.innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+          btn.classList.add('btn-copy-code--copied');
+          btn.innerHTML = `Copied! ✓`;
+          showToast('Code copied to clipboard!');
+          setTimeout(() => {
+            btn.classList.remove('btn-copy-code--copied');
+            btn.innerHTML = `${SVG_ICONS.penTool || ''} Copy`;
+          }, 2000);
+        }).catch(() => {
+          showToast('Failed to copy code.', 'warning');
+        });
+      });
+
+      pre.appendChild(btn);
+    });
+  }
+
+  let cfLoopTimer = null;
+
+  function mountControlFlowVisualizer(container) {
+    container.innerHTML = `
+      <div class="cf-visualizer" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div class="cf-tabs" style="display:flex; gap:10px; border-bottom:1px solid var(--border-default); padding-bottom:10px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="btn btn--primary cf-tab-btn" data-cftab="branch">1. Condition Evaluator</button>
+          <button class="btn btn--secondary cf-tab-btn" data-cftab="loop">2. Loop Step Tracker (1 → 2 → 3)</button>
+          <button class="btn btn--secondary cf-tab-btn" data-cftab="forof">3. for...of vs for...in</button>
+        </div>
+        <div id="cf-tab-content"></div>
+      </div>
+    `;
+
+    const contentEl = container.querySelector('#cf-tab-content');
+    const tabBtns = container.querySelectorAll('.cf-tab-btn');
+
+    function renderCFTab(tab) {
+      tabBtns.forEach(b => {
+        b.className = b.getAttribute('data-cftab') === tab ? 'btn btn--primary cf-tab-btn' : 'btn btn--secondary cf-tab-btn';
+      });
+
+      if (tab === 'branch') renderCFBranchTab(contentEl);
+      else if (tab === 'loop') renderCFLoopTab(contentEl);
+      else if (tab === 'forof') renderCFForOfTab(contentEl);
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => renderCFTab(btn.getAttribute('data-cftab')));
+    });
+
+    renderCFTab('branch');
+
+    return () => {
+      if (cfLoopTimer) { clearInterval(cfLoopTimer); cfLoopTimer = null; }
+    };
+  }
+
+  function renderCFBranchTab(el) {
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+          <label style="font-weight:600; font-size:0.9rem;">Test Value <code>n</code>:</label>
+          <input type="number" id="cf-n-input" value="-5" style="width:80px; padding:6px 10px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-surface); color:var(--text-primary); font-weight:700;">
+          <button id="cf-eval-btn" class="btn btn--primary" style="padding:6px 14px;">Evaluate classify(n)</button>
+        </div>
+        <div id="cf-eval-output" style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-size:0.9rem; line-height:1.6;">
+        </div>
+      </div>
+    `;
+
+    const nInput = el.querySelector('#cf-n-input');
+    const evalBtn = el.querySelector('#cf-eval-btn');
+    const outEl = el.querySelector('#cf-eval-output');
+
+    function evalCondition() {
+      const n = parseFloat(nInput.value);
+      let html = `<div style="font-weight:700; color:var(--accent-primary); margin-bottom:10px;">Evaluating classify(${n}):</div>`;
+      
+      const step1 = n < 0;
+      html += `<div style="padding:8px 12px; margin-bottom:8px; border-radius:6px; background:${step1 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.1)'}; border:1px solid ${step1 ? '#10B981' : '#EF4444'};">`;
+      html += `Step 1: Check <code>n < 0</code> (${n} < 0) &rarr; <strong style="color:${step1 ? '#10B981' : '#EF4444'};">${step1 ? 'TRUE (Branch Taken!)' : 'FALSE'}</strong>`;
+      html += `</div>`;
+
+      if (step1) {
+        html += `<div style="padding:10px; background:rgba(16,185,129,0.2); color:#10B981; border-radius:6px; font-weight:700;">Return Value: "negative"</div>`;
+      } else {
+        const step2 = n === 0;
+        html += `<div style="padding:8px 12px; margin-bottom:8px; border-radius:6px; background:${step2 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.1)'}; border:1px solid ${step2 ? '#10B981' : '#EF4444'};">`;
+        html += `Step 2: Check <code>n === 0</code> (${n} === 0) &rarr; <strong style="color:${step2 ? '#10B981' : '#EF4444'};">${step2 ? 'TRUE (Branch Taken!)' : 'FALSE'}</strong>`;
+        html += `</div>`;
+
+        if (step2) {
+          html += `<div style="padding:10px; background:rgba(16,185,129,0.2); color:#10B981; border-radius:6px; font-weight:700;">Return Value: "zero"</div>`;
+        } else {
+          html += `<div style="padding:8px 12px; margin-bottom:8px; border-radius:6px; background:rgba(16,185,129,0.15); border:1px solid #10B981;">`;
+          html += `Step 3: Fallback <code>else</code> branch executed &rarr; <strong style="color:#10B981;">TRUE (Branch Taken!)</strong>`;
+          html += `</div>`;
+          html += `<div style="padding:10px; background:rgba(16,185,129,0.2); color:#10B981; border-radius:6px; font-weight:700;">Return Value: "positive"</div>`;
+        }
+      }
+
+      outEl.innerHTML = html;
+    }
+
+    evalBtn.addEventListener('click', evalCondition);
+    evalCondition();
+  }
+
+  function renderCFLoopTab(el) {
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button id="cf-loop-play" class="btn btn--primary" style="padding:6px 14px;">▶ Play</button>
+          <button id="cf-loop-step" class="btn btn--secondary" style="padding:6px 14px;">⏭ Step</button>
+          <button id="cf-loop-reset" class="btn btn--secondary" style="padding:6px 14px;">🔄 Reset</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default);">
+            <div style="font-weight:700; color:var(--text-primary); margin-bottom:10px;">Loop Code:</div>
+            <pre class="code-block" style="margin:0;"><code>let sum = 0;
+for (let i = 1; i <= 3; i++) {
+  sum += i;
+}</code></pre>
+          </div>
+
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace;">
+            <div style="font-weight:700; color:var(--accent-primary); margin-bottom:10px;">Live State Tracker:</div>
+            <div id="cf-loop-state"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    let step = 0;
+    const steps = [
+      { i: 1, sum: 0, cond: "1 <= 3", status: "Initialization: i = 1. Checking 1 <= 3 (TRUE).", active: true },
+      { i: 1, sum: 1, cond: "1 <= 3", status: "Executed sum += 1 -> sum = 1. Incrementing i++ -> 2.", active: true },
+      { i: 2, sum: 1, cond: "2 <= 3", status: "Checking 2 <= 3 (TRUE).", active: true },
+      { i: 2, sum: 3, cond: "2 <= 3", status: "Executed sum += 2 -> sum = 3. Incrementing i++ -> 3.", active: true },
+      { i: 3, sum: 3, cond: "3 <= 3", status: "Checking 3 <= 3 (TRUE).", active: true },
+      { i: 3, sum: 6, cond: "3 <= 3", status: "Executed sum += 3 -> sum = 6. Incrementing i++ -> 4.", active: true },
+      { i: 4, sum: 6, cond: "4 <= 3", status: "Checking 4 <= 3 (FALSE). Loop Terminated!", active: false }
+    ];
+
+    const stateEl = el.querySelector('#cf-loop-state');
+    const playBtn = el.querySelector('#cf-loop-play');
+    const stepBtn = el.querySelector('#cf-loop-step');
+    const resetBtn = el.querySelector('#cf-loop-reset');
+
+    function renderStep() {
+      const s = steps[Math.min(step, steps.length - 1)];
+      stateEl.innerHTML = `
+        <div style="margin-bottom:8px;">Variable <code>i</code>: <strong style="color:var(--accent-primary); font-size:1.1rem;">${s.i}</strong></div>
+        <div style="margin-bottom:8px;">Variable <code>sum</code>: <strong style="color:#34D399; font-size:1.1rem;">${s.sum}</strong></div>
+        <div style="margin-bottom:8px;">Condition <code>i <= 3</code>: <strong style="color:${s.active ? '#10B981' : '#EF4444'};">${s.cond} (${s.active ? 'TRUE' : 'FALSE'})</strong></div>
+        <div style="margin-top:12px; padding:10px; background:var(--bg-surface); border-radius:6px; border:1px solid var(--border-default); font-size:0.85rem;">
+          ${s.status}
+        </div>
+      `;
+    }
+
+    stepBtn.addEventListener('click', () => {
+      if (step < steps.length - 1) step++;
+      renderStep();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (cfLoopTimer) { clearInterval(cfLoopTimer); cfLoopTimer = null; }
+      playBtn.textContent = '▶ Play';
+      step = 0;
+      renderStep();
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (cfLoopTimer) {
+        clearInterval(cfLoopTimer);
+        cfLoopTimer = null;
+        playBtn.textContent = '▶ Play';
+      } else {
+        playBtn.textContent = '⏸ Pause';
+        cfLoopTimer = setInterval(() => {
+          if (step < steps.length - 1) {
+            step++;
+            renderStep();
+          } else {
+            clearInterval(cfLoopTimer);
+            cfLoopTimer = null;
+            playBtn.textContent = '▶ Play';
+          }
+        }, 1000);
+      }
+    });
+
+    renderStep();
+  }
+
+  function renderCFForOfTab(el) {
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default);">
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:8px;">Target Array:</div>
+          <pre class="code-block" style="margin:0;"><code>const arr = ["apple", "banana", "cherry"];</code></pre>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:rgba(16,185,129,0.08); padding:16px; border-radius:10px; border:1px solid #10B981;">
+            <div style="font-weight:700; color:#10B981; margin-bottom:8px;">for (const val of arr)</div>
+            <div style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:10px;">Yields <strong>actual values</strong> (Recommended for arrays):</div>
+            <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:6px; font-family:'Fira Code',monospace; font-weight:700; color:#10B981;">
+              <li>→ "apple" (string value)</li>
+              <li>→ "banana" (string value)</li>
+              <li>→ "cherry" (string value)</li>
+            </ul>
+          </div>
+
+          <div style="background:rgba(239,68,68,0.08); padding:16px; border-radius:10px; border:1px solid #EF4444;">
+            <div style="font-weight:700; color:#EF4444; margin-bottom:8px;">for (const idx in arr)</div>
+            <div style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:10px;">Yields <strong>string keys/indices</strong> (Not values!):</div>
+            <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:6px; font-family:'Fira Code',monospace; font-weight:700; color:#EF4444;">
+              <li>→ "0" (string key)</li>
+              <li>→ "1" (string key)</li>
+              <li>→ "2" (string key)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const SHARED_ORIGINAL_ARRAY = [8, 3, 7, 4, 2, 6, 1, 5];
+
+  function mountCoreBuiltInsVisualizer(container) {
+    container.innerHTML = `
+      <div class="builtins-visualizer" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+          <span>🧪 Core Built-ins Visualizer</span>
+          <span style="font-size:0.75rem; padding:2px 8px; background:rgba(96,165,250,0.15); color:#60A5FA; border-radius:12px; border:1px solid #60A5FA;">Shared Sample Array Engine</span>
+        </div>
+        <div style="background:var(--bg-body); padding:10px 14px; border-radius:8px; border:1px solid var(--border-default); margin-bottom:16px; font-family:'Fira Code',monospace; font-size:0.85rem; color:var(--text-primary);">
+          Main Shared Array: <strong style="color:#FBBF24;">const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];</strong>
+        </div>
+
+        <div class="builtins-tabs" style="display:flex; gap:8px; border-bottom:1px solid var(--border-default); padding-bottom:10px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="btn btn--primary b-tab-btn" data-btab="array">1. Array Methods</button>
+          <button class="btn btn--secondary b-tab-btn" data-btab="string">2. String Methods</button>
+          <button class="btn btn--secondary b-tab-btn" data-btab="math">3. Math Methods</button>
+          <button class="btn btn--secondary b-tab-btn" data-btab="mapset">4. Map & Set</button>
+          <button class="btn btn--secondary b-tab-btn" data-btab="json">5. JSON & Numbers</button>
+        </div>
+        <div id="builtins-tab-content"></div>
+      </div>
+    `;
+
+    const contentEl = container.querySelector('#builtins-tab-content');
+    const tabBtns = container.querySelectorAll('.b-tab-btn');
+
+    function renderBTab(tab) {
+      tabBtns.forEach(b => {
+        b.className = b.getAttribute('data-btab') === tab ? 'btn btn--primary b-tab-btn' : 'btn btn--secondary b-tab-btn';
+      });
+
+      if (tab === 'array') renderBArrayTab(contentEl);
+      else if (tab === 'string') renderBStringTab(contentEl);
+      else if (tab === 'math') renderBMathTab(contentEl);
+      else if (tab === 'mapset') renderBMapSetTab(contentEl);
+      else if (tab === 'json') renderBJsonTab(contentEl);
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => renderBTab(btn.getAttribute('data-btab')));
+    });
+
+    renderBTab('array');
+    return () => {};
+  }
+
+  function renderBArrayTab(el) {
+    let workingArray = [...SHARED_ORIGINAL_ARRAY];
+    let selectedOp = 'map';
+    let animTimer = null;
+    let stepIndex = -1;
+    let speedMs = 600;
+
+    const opDefs = {
+      length: { name: 'length', type: 'property', mutates: false, time: 'O(1)', code: 'originalArray.length', desc: 'Returns total count of elements in the array.' },
+      push: { name: 'push(99)', type: 'mutate', mutates: true, time: 'O(1)', code: 'workingArray.push(99)', desc: 'Appends 99 to the end of the array. Modifies the array in-place!' },
+      pop: { name: 'pop()', type: 'mutate', mutates: true, time: 'O(1)', code: 'workingArray.pop()', desc: 'Removes the last element and returns it.' },
+      shift: { name: 'shift()', type: 'mutate', mutates: true, time: 'O(n)', code: 'workingArray.shift()', desc: 'Removes the first element and shifts all remaining elements left.' },
+      unshift: { name: 'unshift(10)', type: 'mutate', mutates: true, time: 'O(n)', code: 'workingArray.unshift(10)', desc: 'Inserts 10 at the beginning and shifts elements right.' },
+      slice: { name: 'slice(2, 6)', type: 'pure', mutates: false, time: 'O(k)', code: 'originalArray.slice(2, 6)', desc: 'Extracts elements from index 2 up to (not including) 6. Original array is UNTOUCHED!' },
+      splice: { name: 'splice(2, 3)', type: 'mutate', mutates: true, time: 'O(n)', code: 'workingArray.splice(2, 3)', desc: 'Removes 3 elements starting at index 2 in-place.' },
+      map: { name: 'map(x => x * 2)', type: 'iterate', mutates: false, time: 'O(n)', code: 'originalArray.map(x => x * 2)', desc: 'Transforms each element by multiplying by 2 into a brand-new array.' },
+      filter: { name: 'filter(x => x > 4)', type: 'iterate', mutates: false, time: 'O(n)', code: 'originalArray.filter(x => x > 4)', desc: 'Selects elements strictly greater than 4 into a brand-new array.' },
+      reduce: { name: 'reduce((acc, x) => acc + x, 0)', type: 'iterate', mutates: false, time: 'O(n)', code: 'originalArray.reduce((acc, x) => acc + x, 0)', desc: 'Accumulates array elements into a single total sum.' },
+      forEach: { name: 'forEach(x => print(x))', type: 'iterate', mutates: false, time: 'O(n)', code: 'originalArray.forEach(x => ...)', desc: 'Visits every element and executes callback without returning a new array.' },
+      find: { name: 'find(x => x === 7)', type: 'search', mutates: false, time: 'O(n)', code: 'originalArray.find(x => x === 7)', desc: 'Searches left-to-right and returns the first element matching condition.' },
+      findIndex: { name: 'findIndex(x => x === 7)', type: 'search', mutates: false, time: 'O(n)', code: 'originalArray.findIndex(x => x === 7)', desc: 'Returns index position of first element matching condition.' },
+      includes: { name: 'includes(4)', type: 'search', mutates: false, time: 'O(n)', code: 'originalArray.includes(4)', desc: 'Returns true if 4 exists in the array, otherwise false.' },
+      indexOf: { name: 'indexOf(4)', type: 'search', mutates: false, time: 'O(n)', code: 'originalArray.indexOf(4)', desc: 'Returns first index of value 4, or -1 if missing.' },
+      some: { name: 'some(x => x > 7)', type: 'check', mutates: false, time: 'O(n)', code: 'originalArray.some(x => x > 7)', desc: 'Returns true if at least one element satisfies condition.' },
+      every: { name: 'every(x => x > 0)', type: 'check', mutates: false, time: 'O(n)', code: 'originalArray.every(x => x > 0)', desc: 'Returns true if all elements satisfy condition.' },
+      isArray: { name: 'Array.isArray(originalArray)', type: 'check', mutates: false, time: 'O(1)', code: 'Array.isArray(originalArray)', desc: 'Checks if passed target is a true Array object.' },
+      sortAsc: { name: 'sort((a,b) => a - b)', type: 'mutate', mutates: true, time: 'O(n log n)', code: '[...originalArray].sort((a,b) => a - b)', desc: 'Sorts numbers in ascending order using numeric comparator.' },
+      sortDesc: { name: 'sort((a,b) => b - a)', type: 'mutate', mutates: true, time: 'O(n log n)', code: '[...originalArray].sort((a,b) => b - a)', desc: 'Sorts numbers in descending order using numeric comparator.' }
+    };
+
+    function renderUI() {
+      el.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; background:var(--bg-body); padding:12px; border-radius:8px; border:1px solid var(--border-default);">
+            <div style="font-weight:700; width:100%; font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">Select Method Demonstration:</div>
+            ${Object.keys(opDefs).map(k => `
+              <button class="btn ${k === selectedOp ? 'btn--primary' : 'btn--secondary'} b-op-sel" data-op="${k}" style="padding:4px 10px; font-size:0.8rem;">
+                ${opDefs[k].name}
+              </button>
+            `).join('')}
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--bg-body); padding:10px 14px; border-radius:8px; border:1px solid var(--border-default);">
+            <button id="b-arr-play" class="btn btn--primary" style="padding:4px 12px; font-size:0.85rem;">▶ Play</button>
+            <button id="b-arr-step" class="btn btn--secondary" style="padding:4px 12px; font-size:0.85rem;">⏭ Step</button>
+            <button id="b-arr-reset" class="btn btn--secondary" style="padding:4px 12px; font-size:0.85rem;">🔄 Reset</button>
+            <div style="display:flex; align-items:center; gap:6px; margin-left:auto;">
+              <span style="font-size:0.8rem; font-weight:600;">Speed:</span>
+              <button class="btn btn--secondary b-speed-btn" data-sp="1200" style="padding:2px 8px; font-size:0.75rem;">0.5x</button>
+              <button class="btn btn--primary b-speed-btn" data-sp="600" style="padding:2px 8px; font-size:0.75rem;">1x</button>
+              <button class="btn btn--secondary b-speed-btn" data-sp="250" style="padding:2px 8px; font-size:0.75rem;">2x</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+              <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">INITIAL ORIGINAL ARRAY:</div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                ${SHARED_ORIGINAL_ARRAY.map((v, i) => `
+                  <div style="background:var(--bg-surface); padding:8px 12px; border-radius:6px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-weight:700; font-size:0.95rem;">
+                    ${v}
+                    <div style="font-size:0.65rem; color:var(--text-muted); text-align:center;">[${i}]</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+              <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">WORKING ARRAY STATE:</div>
+              <div id="b-working-disp" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+            </div>
+          </div>
+
+          <div id="b-op-output" style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-size:0.88rem;"></div>
+        </div>
+      `;
+
+      bindEvents();
+      executeCurrentOp();
+    }
+
+    function bindEvents() {
+      el.querySelectorAll('.b-op-sel').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedOp = btn.getAttribute('data-op');
+          workingArray = [...SHARED_ORIGINAL_ARRAY];
+          stepIndex = -1;
+          if (animTimer) { clearInterval(animTimer); animTimer = null; }
+          renderUI();
+        });
+      });
+
+      const playBtn = el.querySelector('#b-arr-play');
+      const stepBtn = el.querySelector('#b-arr-step');
+      const resetBtn = el.querySelector('#b-arr-reset');
+
+      playBtn.addEventListener('click', () => {
+        if (animTimer) {
+          clearInterval(animTimer);
+          animTimer = null;
+          playBtn.textContent = '▶ Play';
+        } else {
+          playBtn.textContent = '⏸ Pause';
+          animTimer = setInterval(() => {
+            if (stepIndex < SHARED_ORIGINAL_ARRAY.length - 1) {
+              stepIndex++;
+              executeCurrentOp();
+            } else {
+              clearInterval(animTimer);
+              animTimer = null;
+              playBtn.textContent = '▶ Play';
+            }
+          }, speedMs);
+        }
+      });
+
+      stepBtn.addEventListener('click', () => {
+        if (stepIndex < SHARED_ORIGINAL_ARRAY.length - 1) stepIndex++;
+        executeCurrentOp();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        if (animTimer) { clearInterval(animTimer); animTimer = null; }
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        stepIndex = -1;
+        playBtn.textContent = '▶ Play';
+        executeCurrentOp();
+      });
+
+      el.querySelectorAll('.b-speed-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          el.querySelectorAll('.b-speed-btn').forEach(x => x.className = 'btn btn--secondary b-speed-btn');
+          b.className = 'btn btn--primary b-speed-btn';
+          speedMs = parseInt(b.getAttribute('data-sp'), 10);
+        });
+      });
+    }
+
+    function executeCurrentOp() {
+      const def = opDefs[selectedOp];
+      const workDisp = el.querySelector('#b-working-disp');
+      const outDisp = el.querySelector('#b-op-output');
+      if (!workDisp || !outDisp) return;
+
+      let retVal = null;
+      let logHtml = '';
+
+      if (selectedOp === 'length') {
+        retVal = SHARED_ORIGINAL_ARRAY.length;
+      } else if (selectedOp === 'push') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = workingArray.push(99);
+      } else if (selectedOp === 'pop') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = workingArray.pop();
+      } else if (selectedOp === 'shift') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = workingArray.shift();
+      } else if (selectedOp === 'unshift') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = workingArray.unshift(10);
+      } else if (selectedOp === 'slice') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = SHARED_ORIGINAL_ARRAY.slice(2, 6);
+      } else if (selectedOp === 'splice') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY];
+        retVal = workingArray.splice(2, 3);
+      } else if (selectedOp === 'map') {
+        retVal = SHARED_ORIGINAL_ARRAY.map(x => x * 2);
+      } else if (selectedOp === 'filter') {
+        retVal = SHARED_ORIGINAL_ARRAY.filter(x => x > 4);
+      } else if (selectedOp === 'reduce') {
+        retVal = SHARED_ORIGINAL_ARRAY.reduce((acc, x) => acc + x, 0);
+      } else if (selectedOp === 'forEach') {
+        retVal = undefined;
+      } else if (selectedOp === 'find') {
+        retVal = SHARED_ORIGINAL_ARRAY.find(x => x === 7);
+      } else if (selectedOp === 'findIndex') {
+        retVal = SHARED_ORIGINAL_ARRAY.findIndex(x => x === 7);
+      } else if (selectedOp === 'includes') {
+        retVal = SHARED_ORIGINAL_ARRAY.includes(4);
+      } else if (selectedOp === 'indexOf') {
+        retVal = SHARED_ORIGINAL_ARRAY.indexOf(4);
+      } else if (selectedOp === 'some') {
+        retVal = SHARED_ORIGINAL_ARRAY.some(x => x > 7);
+      } else if (selectedOp === 'every') {
+        retVal = SHARED_ORIGINAL_ARRAY.every(x => x > 0);
+      } else if (selectedOp === 'isArray') {
+        retVal = Array.isArray(SHARED_ORIGINAL_ARRAY);
+      } else if (selectedOp === 'sortAsc') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY].sort((a, b) => a - b);
+        retVal = workingArray;
+      } else if (selectedOp === 'sortDesc') {
+        workingArray = [...SHARED_ORIGINAL_ARRAY].sort((a, b) => b - a);
+        retVal = workingArray;
+      }
+
+      workDisp.innerHTML = workingArray.map((v, i) => `
+        <div style="background:${i === stepIndex ? 'rgba(96,165,250,0.25)' : 'var(--bg-surface)'}; border:2px solid ${i === stepIndex ? '#60A5FA' : 'var(--border-default)'}; padding:8px 12px; border-radius:6px; font-family:'Fira Code',monospace; font-weight:700; font-size:0.95rem;">
+          ${v}
+          <div style="font-size:0.65rem; color:var(--text-muted); text-anchor:middle;">[${i}]</div>
+        </div>
+      `).join('');
+
+      logHtml = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>Syntax: <code style="color:var(--accent-primary); font-weight:700;">${escapeHtml(def.code)}</code></div>
+          <span style="font-size:0.75rem; padding:2px 8px; border-radius:12px; background:${def.mutates ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}; color:${def.mutates ? '#EF4444' : '#10B981'}; font-weight:700; border:1px solid ${def.mutates ? '#EF4444' : '#10B981'};">
+            ${def.mutates ? '⚠️ Mutates Array In-Place' : '✅ Non-Mutating (Returns New Copy)'}
+          </span>
+        </div>
+        <div style="margin-bottom:6px;">Returned Value: <strong style="color:#34D399; font-size:1.05rem;">${JSON.stringify(retVal)}</strong></div>
+        <div style="margin-bottom:6px;">Time Complexity: <strong style="color:#60A5FA;">${def.time}</strong></div>
+        <div style="color:var(--text-secondary); font-size:0.85rem; margin-top:6px;">💡 <strong>Explanation:</strong> ${def.desc}</div>
+      `;
+
+      if (stepIndex >= 0 && stepIndex < SHARED_ORIGINAL_ARRAY.length) {
+        const item = SHARED_ORIGINAL_ARRAY[stepIndex];
+        logHtml += `
+          <div style="margin-top:10px; padding:8px 12px; background:rgba(96,165,250,0.15); border:1px solid #60A5FA; border-radius:6px; font-size:0.85rem; color:#60A5FA;">
+            Active Step ${stepIndex + 1}/${SHARED_ORIGINAL_ARRAY.length}: Processing element <code>${item}</code> at index <code>${stepIndex}</code>.
+          </div>
+        `;
+      }
+
+      outDisp.innerHTML = logHtml;
+    }
+
+    renderUI();
+  }
+
+  function renderBStringTab(el) {
+    const text = "  Learn JavaScript with DSA  ";
+    const derivedWords = SHARED_ORIGINAL_ARRAY.map(String);
+
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;">DERIVED STRING ARRAY FROM SHARED DATASET:</div>
+          <div style="font-family:'Fira Code',monospace; color:var(--accent-primary); font-weight:700;">const words = originalArray.map(String); // ${JSON.stringify(derivedWords)}</div>
+        </div>
+
+        <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;">STRING SAMPLE INPUT:</div>
+          <div style="font-family:'Fira Code',monospace; color:#F472B6; font-weight:700;">const text = "${text}";</div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn--secondary b-str-btn" data-str="length">length</button>
+          <button class="btn btn--secondary b-str-btn" data-str="includes">includes("JavaScript")</button>
+          <button class="btn btn--secondary b-str-btn" data-str="indexOf">indexOf("DSA")</button>
+          <button class="btn btn--secondary b-str-btn" data-str="slice">slice(2, 7)</button>
+          <button class="btn btn--secondary b-str-btn" data-str="substring">substring(2, 7)</button>
+          <button class="btn btn--secondary b-str-btn" data-str="split">split(" ")</button>
+          <button class="btn btn--secondary b-str-btn" data-str="trim">trim()</button>
+          <button class="btn btn--secondary b-str-btn" data-str="toLowerCase">toLowerCase()</button>
+          <button class="btn btn--secondary b-str-btn" data-str="toUpperCase">toUpperCase()</button>
+          <button class="btn btn--secondary b-str-btn" data-str="replace">replace("JavaScript", "JS")</button>
+        </div>
+
+        <div id="b-str-output" style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-size:0.9rem;">
+          Select a string method above to inspect output and immutability behavior.
+        </div>
+      </div>
+    `;
+
+    const out = el.querySelector('#b-str-output');
+    el.querySelectorAll('.b-str-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const op = btn.getAttribute('data-str');
+        let res = null;
+        let desc = "";
+
+        if (op === 'length') { res = text.length; desc = "Returns total character length including spaces."; }
+        else if (op === 'includes') { res = text.includes("JavaScript"); desc = "Checks substring existence."; }
+        else if (op === 'indexOf') { res = text.indexOf("DSA"); desc = "Returns starting index of substring 'DSA'."; }
+        else if (op === 'slice') { res = text.slice(2, 7); desc = "Extracts characters from index 2 up to 7."; }
+        else if (op === 'substring') { res = text.substring(2, 7); desc = "Extracts characters between index 2 and 7."; }
+        else if (op === 'split') { res = text.split(" "); desc = "Splits string by space delimiter into array."; }
+        else if (op === 'trim') { res = text.trim(); desc = "Removes leading and trailing whitespace."; }
+        else if (op === 'toLowerCase') { res = text.toLowerCase(); desc = "Converts all characters to lowercase."; }
+        else if (op === 'toUpperCase') { res = text.toUpperCase(); desc = "Converts all characters to uppercase."; }
+        else if (op === 'replace') { res = text.replace("JavaScript", "JS"); desc = "Replaces first occurrence of substring."; }
+
+        out.innerHTML = `
+          <div>Method: <strong style="color:var(--accent-primary);">${op}</strong></div>
+          <div>Returned Value: <strong style="color:#34D399;">${JSON.stringify(res)}</strong></div>
+          <div>Original String Mutated? <strong style="color:#10B981;">NO (Strings are IMMUTABLE primitives!)</strong></div>
+          <div style="margin-top:6px; color:var(--text-secondary);">${desc}</div>
+        `;
+      });
+    });
+  }
+
+  function renderBMathTab(el) {
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;">MATH OPERATING ON SHARED ARRAY DATASET:</div>
+          <div style="font-family:'Fira Code',monospace; color:var(--accent-primary); font-weight:700;">const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-family:'Fira Code',monospace; font-size:0.88rem;">
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong>Math.min(...originalArray):</strong><br/><span style="color:#34D399; font-weight:700; font-size:1.1rem;">${Math.min(...SHARED_ORIGINAL_ARRAY)}</span>
+          </div>
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong>Math.max(...originalArray):</strong><br/><span style="color:#34D399; font-weight:700; font-size:1.1rem;">${Math.max(...SHARED_ORIGINAL_ARRAY)}</span>
+          </div>
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong>Math.floor(7.8):</strong> <span style="color:#60A5FA; font-weight:700;">7</span><br/>
+            <strong>Math.ceil(7.2):</strong> <span style="color:#60A5FA; font-weight:700;">8</span>
+          </div>
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong>Math.round(7.5):</strong> <span style="color:#FBBF24; font-weight:700;">8</span><br/>
+            <strong>Math.trunc(-7.8):</strong> <span style="color:#FBBF24; font-weight:700;">-7</span>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Math.random():</strong> <code id="b-rand-out" style="color:#F472B6; font-weight:700; font-size:1.05rem;">${Math.random().toFixed(4)}</code>
+          </div>
+          <button id="b-rand-btn" class="btn btn--primary" style="padding:4px 12px; font-size:0.82rem;">Generate New Random</button>
+        </div>
+      </div>
+    `;
+
+    const btn = el.querySelector('#b-rand-btn');
+    const out = el.querySelector('#b-rand-out');
+    btn.addEventListener('click', () => {
+      out.textContent = Math.random().toFixed(4);
+    });
+  }
+
+  function renderBMapSetTab(el) {
+    const numbersWithDuplicates = [...SHARED_ORIGINAL_ARRAY, 3, 5, 3];
+
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;">DERIVED DUPLICATE DATASET:</div>
+          <div style="font-family:'Fira Code',monospace; color:var(--accent-primary); font-weight:700;">const numbersWithDuplicates = [8, 3, 7, 4, 2, 6, 1, 5, 3, 5, 3];</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default);">
+            <div style="font-weight:700; color:var(--accent-primary); margin-bottom:8px;">Map (Key-Value Frequency Counter):</div>
+            <div id="b-map-out" style="font-family:'Fira Code',monospace; font-size:0.9rem;"></div>
+          </div>
+
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default);">
+            <div style="font-weight:700; color:#34D399; margin-bottom:8px;">Set (Unique Elements & Duplicate Removal):</div>
+            <div id="b-set-out" style="font-family:'Fira Code',monospace; font-size:0.9rem;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const mapOut = el.querySelector('#b-map-out');
+    const setOut = el.querySelector('#b-set-out');
+
+    const map = new Map();
+    const set = new Set(numbersWithDuplicates);
+
+    for (const num of numbersWithDuplicates) {
+      map.set(num, (map.get(num) || 0) + 1);
+    }
+
+    let mapHtml = "";
+    for (const [k, v] of map.entries()) {
+      mapHtml += `<div>Key <code>${k}</code> &rarr; <strong style="color:var(--accent-primary);">${v} times</strong></div>`;
+    }
+
+    let setHtml = `
+      <div>Set Size: <strong style="color:#34D399;">${set.size}</strong></div>
+      <div style="margin-top:6px;">Unique Values: <code>[${Array.from(set).join(', ')}]</code></div>
+      <div style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">
+        <code>const unique = [...new Set(numbersWithDuplicates)];</code>
+      </div>
+    `;
+
+    mapOut.innerHTML = mapHtml;
+    setOut.innerHTML = setHtml;
+  }
+
+  function renderBJsonTab(el) {
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="b-json-stringify" class="btn btn--primary">JSON.stringify(originalArray)</button>
+          <button id="b-json-parse" class="btn btn--secondary">JSON.parse('[8,3,7,4,2,6,1,5]')</button>
+          <button id="b-num-conv" class="btn btn--secondary">Number & Conversions</button>
+        </div>
+
+        <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-size:0.9rem;" id="b-json-out">
+          Select a conversion operation above to inspect behavior.
+        </div>
+      </div>
+    `;
+
+    const str = JSON.stringify(SHARED_ORIGINAL_ARRAY);
+    const out = el.querySelector('#b-json-out');
+
+    el.querySelector('#b-json-stringify').addEventListener('click', () => {
+      out.innerHTML = `
+        <div style="color:var(--accent-primary); font-weight:700;">Original Shared Array Input:</div>
+        <div>${JSON.stringify(SHARED_ORIGINAL_ARRAY)}</div>
+        <div style="margin-top:10px; color:#34D399; font-weight:700;">JSON.stringify() Output (Text String):</div>
+        <div style="background:var(--bg-surface); padding:10px; border-radius:6px; border:1px solid var(--border-default); color:#34D399;">'${str}'</div>
+      `;
+    });
+
+    el.querySelector('#b-json-parse').addEventListener('click', () => {
+      out.innerHTML = `
+        <div style="color:#34D399; font-weight:700;">JSON Text String Input:</div>
+        <div style="background:var(--bg-surface); padding:10px; border-radius:6px; border:1px solid var(--border-default); color:#34D399;">'${str}'</div>
+        <div style="margin-top:10px; color:var(--accent-primary); font-weight:700;">JSON.parse() Output (Live JS Array Object):</div>
+        <div>${JSON.stringify(JSON.parse(str))}</div>
+      `;
+    });
+
+    el.querySelector('#b-num-conv').addEventListener('click', () => {
+      out.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div>Number("42") &rarr; <strong style="color:#34D399;">42</strong> (type: number)</div>
+          <div>parseInt("42px") &rarr; <strong style="color:#34D399;">42</strong></div>
+          <div>parseFloat("3.14rem") &rarr; <strong style="color:#34D399;">3.14</strong></div>
+          <div>isNaN(NaN) &rarr; <strong style="color:#EF4444;">true</strong></div>
+        </div>
+      `;
+    });
+  }
+
+  function mountPrimitivesVisualizer(container) {
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          🔤 JavaScript Primitives Inspector
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <button class="btn btn--primary p-type-btn" data-ptype="number">Number</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="string">String</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="boolean">Boolean</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="undefined">Undefined</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="null">Null</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="bigint">BigInt</button>
+          <button class="btn btn--secondary p-type-btn" data-ptype="symbol">Symbol</button>
+        </div>
+        <div id="p-type-output" style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace; font-size:0.9rem;"></div>
+      </div>
+    `;
+
+    const out = container.querySelector('#p-type-output');
+    const btns = container.querySelectorAll('.p-type-btn');
+
+    function renderPrimitiveType(t) {
+      btns.forEach(b => b.className = b.getAttribute('data-ptype') === t ? 'btn btn--primary p-type-btn' : 'btn btn--secondary p-type-btn');
+
+      const data = {
+        number: { val: '42', typeof: 'number', desc: 'Immutable numeric value stored directly on stack.' },
+        string: { val: '"Nirmal"', typeof: 'string', desc: 'Immutable text string. Attempting str[0]="b" fails silently.' },
+        boolean: { val: 'true', typeof: 'boolean', desc: 'Logical true/false flag powering conditional branches.' },
+        undefined: { val: 'undefined', typeof: 'undefined', desc: 'Default state of unassigned variables.' },
+        null: { val: 'null', typeof: 'object (Quirk!)', desc: 'Intentional empty value assignment. Note: typeof null === "object" is a historical JS bug.' },
+        bigint: { val: '9007199254740993n', typeof: 'bigint', desc: 'Arbitrary precision integer denoted by n suffix.' },
+        symbol: { val: 'Symbol("id")', typeof: 'symbol', desc: 'Guaranteed unique primitive identifier.' }
+      }[t];
+
+      out.innerHTML = `
+        <div>Selected Type: <strong style="color:var(--accent-primary);">${t.toUpperCase()}</strong></div>
+        <div style="margin-top:6px;">Sample Value: <strong style="color:#34D399;">${data.val}</strong></div>
+        <div style="margin-top:6px;">typeof Output: <strong style="color:#FBBF24;">"${data.typeof}"</strong></div>
+        <div style="margin-top:10px; color:var(--text-secondary); font-size:0.88rem;">💡 ${data.desc}</div>
+      `;
+    }
+
+    btns.forEach(b => b.addEventListener('click', () => renderPrimitiveType(b.getAttribute('data-ptype'))));
+    renderPrimitiveType('number');
+    return () => {};
+  }
+
+  function mountObjectsVisualizer(container) {
+    let obj = { name: "Alice", age: 25 };
+
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          📦 Object Memory & Reference Visualizer
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <button class="btn btn--secondary o-act-btn" data-act="add">Add Property (city = "Chennai")</button>
+          <button class="btn btn--secondary o-act-btn" data-act="update">Update Property (age = 26)</button>
+          <button class="btn btn--secondary o-act-btn" data-act="delete">Delete Property (delete age)</button>
+          <button class="btn btn--secondary o-act-btn" data-act="ref">Copy Reference (user2 = user1)</button>
+          <button class="btn btn--secondary o-act-btn" data-act="reset">Reset Object</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">STACK REFERENCE POINTERS:</div>
+            <div style="color:var(--accent-primary); font-weight:700;">user1 ──▶ [ Heap Ref: 0x4F1 ]</div>
+            <div id="o-user2-ref" style="color:#F472B6; font-weight:700; margin-top:4px; display:none;">user2 ──▶ [ Heap Ref: 0x4F1 ]</div>
+          </div>
+
+          <div style="background:rgba(0,201,167,0.1); padding:16px; border-radius:10px; border:2px solid var(--accent-secondary); font-family:'Fira Code',monospace;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--accent-secondary); margin-bottom:6px;">HEAP OBJECT [ Address: 0x4F1 ]:</div>
+            <div id="o-heap-disp" style="color:var(--text-primary); font-weight:700;"></div>
+          </div>
+        </div>
+
+        <div id="o-log-desc" style="margin-top:14px; background:var(--bg-body); padding:12px; border-radius:8px; border:1px solid var(--border-default); font-size:0.88rem; color:var(--text-secondary);">
+          Click an operation above to mutate properties or inspect reference sharing.
+        </div>
+      </div>
+    `;
+
+    const heapDisp = container.querySelector('#o-heap-disp');
+    const u2Ref = container.querySelector('#o-user2-ref');
+    const logDesc = container.querySelector('#o-log-desc');
+
+    function renderObj() {
+      heapDisp.innerHTML = JSON.stringify(obj, null, 2).replace(/\n/g, '<br/>').replace(/ /g, '&nbsp;');
+    }
+
+    container.querySelectorAll('.o-act-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const act = btn.getAttribute('data-act');
+        if (act === 'add') {
+          obj.city = "Chennai";
+          logDesc.textContent = 'Property city = "Chennai" added to heap object at 0x4F1.';
+        } else if (act === 'update') {
+          obj.age = 26;
+          logDesc.textContent = 'Property age mutated to 26 in-place.';
+        } else if (act === 'delete') {
+          delete obj.age;
+          logDesc.textContent = 'Property age deleted from heap object.';
+        } else if (act === 'ref') {
+          u2Ref.style.display = 'block';
+          logDesc.textContent = 'user2 = user1 copies reference pointer 0x4F1. Both variables point to the SAME heap object!';
+        } else if (act === 'reset') {
+          obj = { name: "Alice", age: 25 };
+          u2Ref.style.display = 'none';
+          logDesc.textContent = 'Object reset to original state.';
+        }
+        renderObj();
+      });
+    });
+
+    renderObj();
+    return () => {};
+  }
+
+  function mountFunctionsVisualizer(container) {
+    let step = 0;
+    const steps = [
+      { call: 'calculate()', frame: 'calculate()', desc: 'Invocation starts. calculate() frame pushed onto Call Stack.', activeLine: 'Line 6: const finalResult = calculate();' },
+      { call: 'multiply(5, 4)', frame: 'multiply(a=5, b=4)', desc: 'Inside calculate(), multiply(5, 4) is invoked with arguments 5 and 4.', activeLine: 'Line 7: const answer = multiply(5, 4);' },
+      { call: 'a * b', frame: 'multiply() executing', desc: 'Parameters received (a=5, b=4). Result calculated: 20.', activeLine: 'Line 2: const result = a * b;' },
+      { call: 'return 20', frame: 'multiply() pops off', desc: 'multiply() returns 20 and its frame is popped off stack.', activeLine: 'Line 3: return result;' },
+      { call: 'return answer', frame: 'calculate() pops off', desc: 'calculate() receives 20 into answer, returns 20, and pops off stack.', activeLine: 'Line 8: return answer;' }
+    ];
+
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          ⚙️ Function Invocation & Call Stack Stepper
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
+          <button id="f-step-btn" class="btn btn--primary">⏭ Step Invocation</button>
+          <button id="f-reset-btn" class="btn btn--secondary">🔄 Reset</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">SOURCE CODE:</div>
+            <pre class="code-block" style="margin:0; font-size:0.85rem;"><code>1: function multiply(a, b) {
+2:   const result = a * b;
+3:   return result;
+4: }
+5: function calculate() {
+6:   const answer = multiply(5, 4);
+7:   return answer;
+8: }</code></pre>
+            <div id="f-line-out" style="margin-top:8px; color:var(--accent-primary); font-weight:700; font-size:0.85rem;"></div>
+          </div>
+
+          <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default);">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">ACTIVE STACK FRAME & STEP:</div>
+            <div id="f-stack-out" style="font-family:'Fira Code',monospace; font-weight:700; font-size:0.95rem; color:#34D399;"></div>
+            <div id="f-desc-out" style="margin-top:10px; font-size:0.88rem; color:var(--text-secondary);"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const stepBtn = container.querySelector('#f-step-btn');
+    const resetBtn = container.querySelector('#f-reset-btn');
+    const lineOut = container.querySelector('#f-line-out');
+    const stackOut = container.querySelector('#f-stack-out');
+    const descOut = container.querySelector('#f-desc-out');
+
+    function renderStep() {
+      const s = steps[Math.min(step, steps.length - 1)];
+      lineOut.textContent = s.activeLine;
+      stackOut.textContent = s.frame;
+      descOut.textContent = s.desc;
+    }
+
+    stepBtn.addEventListener('click', () => {
+      if (step < steps.length - 1) step++;
+      renderStep();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      step = 0;
+      renderStep();
+    });
+
+    renderStep();
+    return () => {};
+  }
+
+  function mountRecursionVisualizer(container) {
+    let step = 0;
+    let nInputVal = 4;
+
+    function getSteps(n) {
+      const arr = [];
+      for (let i = n; i >= 1; i--) {
+        arr.push({ phase: 'Winding (Going Down)', depth: n - i + 1, call: `factorial(${i})`, desc: `factorial(${i}) pushed to Call Stack. Needs ${i} * factorial(${i - 1}).` });
+      }
+      arr.push({ phase: 'Base Case Reached', depth: n + 1, call: 'factorial(0) -> 1', desc: 'Base Case n === 0 reached! Returns 1. Unwinding starts!' });
+      let acc = 1;
+      for (let i = 1; i <= n; i++) {
+        acc *= i;
+        arr.push({ phase: 'Unwinding (Coming Up)', depth: n - i + 1, call: `factorial(${i}) -> ${acc}`, desc: `factorial(${i}) receives result, computes ${i} * previous = ${acc}, and pops off.` });
+      }
+      return arr;
+    }
+
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          🔄 Recursive Call Stack Unwinder (factorial(n))
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+          <label style="font-size:0.88rem; font-weight:600;">Input n (1-6):</label>
+          <input type="number" id="r-n-val" value="4" min="1" max="6" style="width:60px; padding:4px 8px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-body); color:var(--text-primary); font-weight:700;">
+          <button id="r-step-btn" class="btn btn--primary">⏭ Step Unwind</button>
+          <button id="r-reset-btn" class="btn btn--secondary">🔄 Reset</button>
+        </div>
+
+        <div style="background:var(--bg-body); padding:16px; border-radius:10px; border:1px solid var(--border-default); font-family:'Fira Code',monospace;">
+          <div id="r-phase-out" style="font-weight:700; color:var(--accent-primary); font-size:1rem; margin-bottom:6px;"></div>
+          <div id="r-call-out" style="font-weight:700; color:#34D399; font-size:1.1rem; margin-bottom:8px;"></div>
+          <div id="r-desc-out" style="font-size:0.88rem; color:var(--text-secondary);"></div>
+        </div>
+      </div>
+    `;
+
+    const nIn = container.querySelector('#r-n-val');
+    const stepBtn = container.querySelector('#r-step-btn');
+    const resetBtn = container.querySelector('#r-reset-btn');
+    const phaseOut = container.querySelector('#r-phase-out');
+    const callOut = container.querySelector('#r-call-out');
+    const descOut = container.querySelector('#r-desc-out');
+
+    function render() {
+      nInputVal = Math.min(6, Math.max(1, parseInt(nIn.value, 10) || 4));
+      const steps = getSteps(nInputVal);
+      const s = steps[Math.min(step, steps.length - 1)];
+      phaseOut.textContent = `Phase: ${s.phase} [Stack Depth: ${s.depth}]`;
+      callOut.textContent = s.call;
+      descOut.textContent = s.desc;
+    }
+
+    stepBtn.addEventListener('click', () => {
+      const steps = getSteps(nInputVal);
+      if (step < steps.length - 1) step++;
+      render();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      step = 0;
+      render();
+    });
+
+    nIn.addEventListener('change', () => {
+      step = 0;
+      render();
+    });
+
+    render();
+    return () => {};
+  }
+
+  function mountSpaceComplexityVisualizer(container) {
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          💾 Auxiliary Space Complexity Allocation Visualizer
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong style="color:#60A5FA;">O(1) Constant Space</strong>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">In-place mutation or scalar variables. Memory footprint does not grow with n.</p>
+          </div>
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong style="color:#34D399;">O(n) Linear Space</strong>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Allocating a new array copy of length n or building n active recursion call stack frames.</p>
+          </div>
+          <div style="background:var(--bg-body); padding:14px; border-radius:8px; border:1px solid var(--border-default);">
+            <strong style="color:#FBBF24;">O(n²) Quadratic Space</strong>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Creating an n &times; n 2D grid matrix in Heap memory.</p>
+          </div>
+        </div>
+      </div>
+    `;
+    return () => {};
+  }
+
+  function mountDSAIntroVisualizer(container) {
+    container.innerHTML = `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px;">
+        <div style="font-weight:700; color:var(--accent-primary); font-size:1.1rem; margin-bottom:12px;">
+          ⚡ Unsorted Linear Search O(n) vs Sorted Binary Search O(log n)
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:rgba(239,68,68,0.08); padding:16px; border-radius:10px; border:1px solid #EF4444;">
+            <strong style="color:#EF4444;">Linear Search (Unsorted Data)</strong>
+            <div style="font-size:0.88rem; color:var(--text-secondary); margin-top:8px;">Scans elements 1-by-1. Up to 1,000 checks for n = 1,000!</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.08); padding:16px; border-radius:10px; border:1px solid #10B981;">
+            <strong style="color:#10B981;">Binary Search (Sorted Data)</strong>
+            <div style="font-size:0.88rem; color:var(--text-secondary); margin-top:8px;">Halves search space each step. At most ~10 checks for n = 1,000!</div>
+          </div>
+        </div>
+      </div>
+    `;
+    return () => {};
+  }
+
 
   function mountMemoryPlayground(container) {
     let currentStep = 0;

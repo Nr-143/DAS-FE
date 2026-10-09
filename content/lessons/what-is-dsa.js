@@ -11,6 +11,7 @@ window.LESSONS_CONTENT["what-is-dsa"] = {
   title: "What is DSA?",
   levelTitle: "Level 1 — Foundations",
   summary: "Understand what Data Structures and Algorithms are, how they work together, and why picking the right combination matters.",
+  interactiveWidget: "dsa-intro-visualizer",
 
   whyMatters: "DSA shows up constantly in real software work and in how software engineers are hired. It's widely regarded as one of the most heavily tested areas in technical interviews, across companies of every size. But the bigger reason to actually learn it well: the difference between an O(n²) function and an O(n log n) one isn't academic — it's the difference between a feature that feels instant and one that visibly slows down or times out as real data grows. You already saw this on this exact page: 1,000 operations vs. ~10, for the same task.",
 

@@ -13,6 +13,7 @@ window.LESSONS_CONTENT["space-complexity"] = {
   title: "Space Complexity",
   levelTitle: "Level 1 — Foundations",
   summary: "Learn how algorithms consume extra memory during execution — from variables and arrays to call stack frames and time-space trade-offs.",
+  interactiveWidget: "space-complexity-visualizer",
 
   sections: [
     {

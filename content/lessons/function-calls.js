@@ -141,6 +141,7 @@ window.LESSONS_CONTENT["function-calls"] = {
   title: "Function Calls",
   levelTitle: "Level 1 — Foundations",
   summary: "Understand what happens when a function runs, how JavaScript manages function execution, and why the call stack matters in DSA.",
+  interactiveWidget: "functions-visualizer",
   whyMatters: "Tracing Call Stack frames and understanding return value propagation is essential for debugging code execution, understanding memory scope, and mastering Recursion.",
 
   sections: [

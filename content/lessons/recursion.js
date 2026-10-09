@@ -175,6 +175,7 @@ window.LESSONS_CONTENT["recursion"] = {
   title: "Recursion",
   levelTitle: "Level 1 — Foundations",
   summary: "Learn how a function can solve a problem by calling itself, and understand how the call stack manages each recursive call.",
+  interactiveWidget: "recursion-visualizer",
   whyMatters: "Recursion is the foundational technique behind trees, graphs, divide-and-conquer algorithms, and backtracking. Mastering how recursive calls wind and unwind on the call stack is essential for solving complex algorithms.",
 
   sections: [

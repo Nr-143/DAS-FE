@@ -1,60 +1,75 @@
 /**
  * DSA Tracker — Lesson Content: Core Built-ins
  * ──────────────────────────────────────────────
- * Independent content module adhering to Schema.
+ * Standardized 12-stage beginner-friendly lesson for JavaScript built-ins.
+ * Uses ONE SHARED SAMPLE ARRAY across all relevant Array, Math, Map, and Set demos:
+ * const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];
  */
 
 window.LESSONS_CONTENT = window.LESSONS_CONTENT || {};
 
-window.LESSONS_CONTENT["core-builtins"] = {
+const coreBuiltInsContent = {
   id: "core-builtins",
   title: "Core Built-ins",
   levelTitle: "Level 1 — Foundations",
-  summary: "Master JavaScript's essential built-in objects and methods — Array, String, Math, JSON, Map, and Set — so you never reinvent common operations by hand.",
+  summary: "Master JavaScript's essential built-in objects — Array, String, Math, JSON, Map, Set, and Number helpers — using a consistent shared dataset [8, 3, 7, 4, 2, 6, 1, 5].",
+  interactiveWidget: "core-builtins-visualizer",
 
   definitions: [
     {
-      term: "Built-in Object",
-      def: "An object provided by the JavaScript language itself, ready to use without defining it yourself (e.g. <code>Math</code>, <code>JSON</code>, <code>Array</code>, <code>String</code>, <code>Map</code>, <code>Set</code>)."
+      term: "Shared Benchmark Dataset",
+      def: "All array method demonstrations in this topic start from a fresh copy of <code>const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];</code> so you can directly compare how each method behaves."
     },
     {
-      term: "Array Methods",
-      def: "Built-in functions on arrays for iterating, transforming, and searching without writing manual loops (<code>map</code>, <code>filter</code>, <code>reduce</code>, <code>forEach</code>, <code>find</code>, <code>includes</code>, <code>sort</code>, <code>slice</code>, <code>splice</code>, <code>indexOf</code>, and more)."
+      term: "Array Mutating vs Non-Mutating",
+      def: "<strong>Mutating methods</strong> (<code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>) modify the working array in place. <strong>Non-mutating methods</strong> (<code>slice</code>, <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>find</code>, <code>includes</code>) return a <em>new array or value</em>, leaving the original array untouched."
     },
     {
-      term: "String Methods",
-      def: "Built-in functions on strings for reading and reshaping text (<code>slice</code>, <code>split</code>, <code>includes</code>, <code>indexOf</code>, <code>toUpperCase</code>/<code>toLowerCase</code>, <code>trim</code>, <code>replace</code>, and more)."
+      term: "String Methods & Immutability",
+      def: "Strings in JavaScript are immutable (read-only). Methods like <code>slice</code>, <code>split</code>, <code>trim</code>, <code>replace</code>, <code>toLowerCase</code>, and <code>toUpperCase</code> return new string values without modifying the original string."
     },
     {
       term: "Math Object",
-      def: "A built-in object providing mathematical constants and functions (<code>Math.max</code>, <code>Math.min</code>, <code>Math.floor</code>, <code>Math.random</code>, <code>Math.abs</code>, <code>Math.pow</code>, <code>Math.sqrt</code>)."
+      def: "A static built-in utility object for mathematical calculations, including <code>Math.min(...originalArray)</code>, <code>Math.max(...originalArray)</code>, <code>Math.floor</code>, <code>Math.ceil</code>, <code>Math.round</code>, <code>Math.trunc</code>, <code>Math.abs</code>, <code>Math.sqrt</code>, <code>Math.pow</code>, and <code>Math.random()</code>."
     },
     {
-      term: "JSON",
-      def: "A built-in object for converting between JavaScript values and JSON text: <code>JSON.stringify()</code> turns a value into a JSON string, <code>JSON.parse()</code> turns a JSON string back into a JavaScript value."
+      term: "JSON (Serialization & Deserialization)",
+      def: "<code>JSON.stringify()</code> converts JavaScript objects or arrays into JSON text; <code>JSON.parse()</code> parses JSON text back into JavaScript data structures."
     },
     {
-      term: "Map",
-      def: "A built-in key-value collection where keys can be <em>any</em> type (unlike plain <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"objects\">Objects</a>, which coerce keys to strings), and insertion order is preserved."
+      term: "Map & Set (Lookup & Deduplication)",
+      def: "<code>Set</code> stores unique elements, allowing instant duplicate removal (e.g. <code>[...new Set(numbersWithDuplicates)]</code>). <code>Map</code> stores key-value pairs with arbitrary key types in $O(1)$ average time."
     },
     {
-      term: "Set",
-      def: "A built-in collection that only stores unique values — adding a duplicate value has no effect."
+      term: "Number & Parsing Helpers",
+      def: "Functions for parsing numbers and validating values: <code>parseInt()</code>, <code>parseFloat()</code>, <code>Number()</code>, and <code>Number.isNaN()</code>."
     }
   ],
 
-  howItWorksTogether: "These built-ins exist so you don't have to reinvent common operations by hand every time. Array and String methods cover most everyday data transformations — filtering, mapping, searching — without writing manual loops. <code>Math</code> covers common numeric operations. <code>JSON</code> is how data gets converted to and from text, which matters constantly when working with APIs or storage. <code>Map</code> and <code>Set</code> are specialized collections: <code>Map</code> when you need arbitrary keys (not just strings) with insertion order preserved, <code>Set</code> when you specifically need to guarantee uniqueness. You'll rely on these constantly once you get into real data structure and algorithm problems — for example, <code>Set</code> is the simplest way to check for duplicates in an array, and <code>Map</code> is closely related to how a Hash Table (an upcoming topic in Level 4) actually works under the hood.",
+  howItWorksTogether: "By using the shared sample array <code>[8, 3, 7, 4, 2, 6, 1, 5]</code> across every demonstration, you can see exactly how operations differ. <code>map()</code> transforms every element into <code>[16, 6, 14, 8, 4, 12, 2, 10]</code>, <code>filter()</code> extracts elements <code>> 4</code> to produce <code>[8, 7, 6, 5]</code>, <code>reduce()</code> sums all elements to <code>36</code>, <code>Math.min()</code> finds <code>1</code>, and <code>Math.max()</code> finds <code>8</code>. Each operation starts from <code>const workingArray = [...originalArray]</code> so your starting state is always consistent.",
 
-  whyItMatters: "Almost every algorithm and data-structure operation you'll encounter uses these built-ins. Knowing which method mutates vs returns a new value, and what time complexity each one has, prevents bugs and helps you write concise, efficient solutions.",
+  whyMatters: "Almost every Data Structure & Algorithm problem relies on these core built-ins. Knowing whether a method mutates in-place, what it returns, and its time complexity ($O(1)$ vs $O(n)$ vs $O(n \\log n)$) prevents bugs and helps you write optimal interview solutions.",
+
+  bigPicture: {
+    title: "Core Built-ins in DSA Problem Solving",
+    familiesHeading: "Shared Dataset Benchmark: [8, 3, 7, 4, 2, 6, 1, 5]",
+    linearText: "<strong>Array Transformation:</strong> <code>map()</code> doubles values, <code>filter()</code> selects subsets, <code>reduce()</code> accumulates sums, and <code>sort((a,b)=>a-b)</code> sorts elements into <code>[1, 2, 3, 4, 5, 6, 7, 8]</code>.",
+    nonlinearText: "<strong>Hash Maps & Sets:</strong> Using a derived array with duplicates <code>[...originalArray, 3, 5, 3]</code>, <code>Set</code> instantly removes duplicates to restore unique items in $O(n)$ time.",
+    categoriesHeading: "How Built-ins Map to Classic Patterns:",
+    searchSortText: "<strong>Index Calculations:</strong> <code>Math.floor((low + high) / 2)</code> calculates array midpoints in Binary Search.",
+    recursionText: "<strong>Divide & Conquer:</strong> <code>slice(0, mid)</code> and <code>slice(mid)</code> split arrays into subproblems for Merge Sort.",
+    patternsText: "<strong>Frequency Counting:</strong> <code>Map</code> counts element frequencies in $O(n)$ time for Two Sum and Anagram problems.",
+    closingText: "Mastering built-ins allows you to focus on high-level algorithmic logic rather than rewriting manual loops."
+  },
 
   workedExample: {
-    title: "Array, String, Math, JSON, Map & Set in Action",
-    primitiveText: "<strong>1. Array Methods — Transform, Filter, Accumulate:</strong><br/><code>const nums = [5, 3, 8, 1];<br/><br/>nums.map(n =&gt; n * 2);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// [10, 6, 16, 2] — NEW array<br/>nums.filter(n =&gt; n &gt; 3);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// [5, 8] — NEW array<br/>nums.reduce((sum, n) =&gt; sum + n, 0); // 17 — single value<br/>nums.find(n =&gt; n &gt; 4);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 5 — first match<br/>nums.includes(3);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// true<br/><br/>nums.sort((a, b) =&gt; a - b);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// [1, 3, 5, 8]<br/>// WARNING: sort() MUTATES the original array!</code><br/><br/><strong>2. String Methods:</strong><br/><code>\"Hello World\".toLowerCase();&nbsp;&nbsp;// \"hello world\"<br/>\"&nbsp; trim me &nbsp;\".trim();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// \"trim me\"<br/>\"a,b,c\".split(\",\");&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// [\"a\", \"b\", \"c\"]<br/>\"hello\".slice(1, 3);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// \"el\"</code>",
-    referenceText: "<strong>3. Math Object:</strong><br/><code>Math.max(1, 5, 3);&nbsp;&nbsp;// 5<br/>Math.floor(4.7);&nbsp;&nbsp;&nbsp;&nbsp;// 4<br/>Math.random();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// random number, 0 &lt;= x &lt; 1</code><br/><br/><strong>4. JSON — Serialize &amp; Deserialize:</strong><br/><code>JSON.stringify({ a: 1 });&nbsp;&nbsp;// '{\"a\":1}'<br/>JSON.parse('{\"a\":1}');&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// { a: 1 }</code><br/><br/><strong>5. Map &amp; Set:</strong><br/><code>const unique = new Set([1, 2, 2, 3]);<br/>// Set(3) {1, 2, 3} — duplicates removed<br/><br/>const scores = new Map();<br/>scores.set(\"alex\", 90);<br/>scores.get(\"alex\"); // 90<br/>scores.has(\"alex\"); // true</code><br/><br/><em>Note:</em> <code>Map</code> keys can be any type (objects, functions, numbers), unlike plain <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"objects\">Objects</a> which coerce all keys to strings."
+    title: "Master Reference using Shared Array [8, 3, 7, 4, 2, 6, 1, 5]",
+    primitiveText: "<strong>1. Shared Initial Array:</strong><br/><code>const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];</code><br/><br/><strong>2. Basic Operations (Fresh Copy Each Time):</strong><br/><code>let arr = [...originalArray];<br/>arr.length;        // 8<br/>arr.push(9);       // returns 9 (new length), arr becomes [8, 3, 7, 4, 2, 6, 1, 5, 9]<br/>arr.pop();        // returns 9, arr becomes [8, 3, 7, 4, 2, 6, 1, 5]<br/>arr.shift();      // returns 8, arr becomes [3, 7, 4, 2, 6, 1, 5]<br/>arr.unshift(99);  // returns 8 (new length), arr becomes [99, 3, 7, 4, 2, 6, 1, 5]</code><br/><br/><strong>3. Slice vs Splice:</strong><br/><code>// slice — NON-MUTATING (returns copy)<br/>originalArray.slice(1, 4); // [3, 7, 4] (originalArray is UNCHANGED)<br/><br/>// splice — MUTATING (modifies array in place)<br/>let work = [...originalArray];<br/>work.splice(2, 3); // removes 3 items at idx 2 -> returns [7, 4, 2], work is now [8, 3, 6, 1, 5]</code>",
+    referenceText: "<strong>4. Transformation & Filtering (Shared Dataset):</strong><br/><code>originalArray.map(x => x * 2);           // [16, 6, 14, 8, 4, 12, 2, 10]<br/>originalArray.filter(x => x > 4);        // [8, 7, 6, 5]<br/>originalArray.reduce((acc, x) => acc + x, 0); // 36<br/>originalArray.find(x => x < 4);          // 3 (first matching item)<br/>originalArray.findIndex(x => x === 7);   // 2<br/>originalArray.includes(7);               // true<br/>originalArray.indexOf(6);                // 5<br/>originalArray.some(x => x > 7);          // true (8 is > 7)<br/>originalArray.every(x => x > 0);         // true (all are > 0)<br/>Array.isArray(originalArray);            // true</code><br/><br/><strong>5. Numeric Sorting:</strong><br/><code>[...originalArray].sort((a, b) => a - b); // [1, 2, 3, 4, 5, 6, 7, 8] (Ascending)<br/>[...originalArray].sort((a, b) => b - a); // [8, 7, 6, 5, 4, 3, 2, 1] (Descending)<br/>// WARNING: [8, 3, 7, 4, 2, 6, 1, 5].sort() without comparator sorts strings alphabetically!</code><br/><br/><strong>6. String Methods (Example Text):</strong><br/><code>const text = \"  Learn JavaScript with DSA  \";<br/>text.trim();            // \"Learn JavaScript with DSA\"<br/>text.toLowerCase();     // \"  learn javascript with dsa  \"<br/>text.split(\" \");        // [\"\", \"\", \"Learn\", \"JavaScript\", \"with\", \"DSA\", \"\", \"\"]<br/>text.includes(\"DSA\");   // true</code><br/><br/><strong>7. Math & JSON Utilities:</strong><br/><code>Math.min(...originalArray); // 1<br/>Math.max(...originalArray); // 8<br/>Math.floor(7.9);            // 7<br/>Math.ceil(7.1);             // 8<br/>Math.round(7.5);            // 8<br/>Math.trunc(7.9);            // 7<br/><br/>JSON.stringify(originalArray); // '[8,3,7,4,2,6,1,5]'<br/>JSON.parse('[8,3,7,4,2,6,1,5]'); // [8, 3, 7, 4, 2, 6, 1, 5]</code><br/><br/><strong>8. Set & Map Duplicate Removal:</strong><br/><code>const numbersWithDuplicates = [...originalArray, 3, 5, 3];<br/>const uniqueSet = new Set(numbersWithDuplicates);<br/>const cleanArray = [...uniqueSet]; // [8, 3, 7, 4, 2, 6, 1, 5] (duplicates removed)</code>"
   },
 
   visual: {
-    caption: "Figure 1: Array methods at a glance — which ones mutate the original array vs which ones return a new array and leave the original untouched.",
+    caption: "Figure 1: Core Built-ins Classification — Mutating vs Non-Mutating Methods on [8, 3, 7, 4, 2, 6, 1, 5].",
     diagramSvg: `
       <svg class="diagram-svg" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
         <rect width="700" height="300" fill="var(--bg-body)" rx="12" />
@@ -62,176 +77,184 @@ window.LESSONS_CONTENT["core-builtins"] = {
         <!-- Left panel: MUTATING -->
         <g transform="translate(20, 15)">
           <rect width="310" height="270" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
-          <rect x="0" y="0" width="310" height="40" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="10" ry="10"/>
-          <text x="155" y="27" fill="#f87171" font-size="14" font-weight="bold" text-anchor="middle">MUTATES Original Array</text>
+          <rect x="0" y="0" width="310" height="40" fill="rgba(239,68,68,0.12)" stroke="#EF4444" stroke-width="2" rx="10" ry="10"/>
+          <text x="155" y="27" fill="#EF4444" font-size="14" font-weight="bold" text-anchor="middle">MUTATES Working Array</text>
 
-          <rect x="25" y="55" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
+          <rect x="25" y="55" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
           <text x="85" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.sort()</text>
 
-          <rect x="165" y="55" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
+          <rect x="165" y="55" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
           <text x="225" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.splice()</text>
 
-          <rect x="25" y="97" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="85" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.reverse()</text>
+          <rect x="25" y="97" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
+          <text x="85" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.push()</text>
 
-          <rect x="165" y="97" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="225" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.push()</text>
+          <rect x="165" y="97" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
+          <text x="225" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.pop()</text>
 
-          <rect x="25" y="139" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.pop()</text>
+          <rect x="25" y="139" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
+          <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.shift()</text>
 
-          <rect x="165" y="139" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.shift()</text>
+          <rect x="165" y="139" width="120" height="32" fill="rgba(239,68,68,0.06)" stroke="#EF4444" rx="6"/>
+          <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.unshift()</text>
 
-          <rect x="25" y="181" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="85" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.unshift()</text>
-
-          <rect x="165" y="181" width="120" height="32" fill="rgba(184,74,74,0.06)" stroke="#b84a4a" rx="6"/>
-          <text x="225" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.fill()</text>
-
-          <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Changes the array in place.</text>
-          <text x="155" y="260" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">The original variable is modified!</text>
+          <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Modifies array in-place.</text>
         </g>
 
         <!-- Right panel: NON-MUTATING -->
         <g transform="translate(370, 15)">
           <rect width="310" height="270" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10" />
-          <rect x="0" y="0" width="310" height="40" fill="rgba(43,138,136,0.12)" stroke="#2b8a88" stroke-width="2" rx="10" ry="10"/>
-          <text x="155" y="27" fill="#2dd4bf" font-size="14" font-weight="bold" text-anchor="middle">Returns NEW Array (Safe)</text>
+          <rect x="0" y="0" width="310" height="40" fill="rgba(16,185,129,0.12)" stroke="#10B981" stroke-width="2" rx="10" ry="10"/>
+          <text x="155" y="27" fill="#10B981" font-size="14" font-weight="bold" text-anchor="middle">Returns NEW Copy / Value</text>
 
-          <rect x="25" y="55" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
+          <rect x="25" y="55" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
           <text x="85" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.map()</text>
 
-          <rect x="165" y="55" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
+          <rect x="165" y="55" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
           <text x="225" y="76" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.filter()</text>
 
-          <rect x="25" y="97" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
+          <rect x="25" y="97" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
           <text x="85" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.slice()</text>
 
-          <rect x="165" y="97" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
+          <rect x="165" y="97" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
           <text x="225" y="118" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.concat()</text>
 
-          <rect x="25" y="139" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
-          <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.flat()</text>
+          <rect x="25" y="139" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
+          <text x="85" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.reduce()</text>
 
-          <rect x="165" y="139" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
-          <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.flatMap()</text>
+          <rect x="165" y="139" width="120" height="32" fill="rgba(16,185,129,0.06)" stroke="#10B981" rx="6"/>
+          <text x="225" y="160" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.find()</text>
 
-          <rect x="25" y="181" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
-          <text x="85" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.toSorted()</text>
-
-          <rect x="165" y="181" width="120" height="32" fill="rgba(43,138,136,0.06)" stroke="#2b8a88" rx="6"/>
-          <text x="225" y="202" fill="var(--text-primary)" font-size="12" font-weight="700" text-anchor="middle">.toReversed()</text>
-
-          <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Original array stays unchanged.</text>
-          <text x="155" y="260" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Returns a brand-new copy.</text>
+          <text x="155" y="245" fill="var(--text-muted)" font-size="10" font-style="italic" text-anchor="middle">Original array remains untouched.</text>
         </g>
       </svg>
     `
   },
 
-  codeSnippet: `<span class="cm">// ─── 1. ARRAY METHODS: Transform, Filter, Accumulate ───</span>
-<span class="kw">const</span> nums = [<span class="num">5</span>, <span class="num">3</span>, <span class="num">8</span>, <span class="num">1</span>];
+  codeSnippet: `<span class="cm">// ─── 1. SHARED SAMPLE DATASET ───</span>
+<span class="kw">const</span> originalArray = [<span class="num">8</span>, <span class="num">3</span>, <span class="num">7</span>, <span class="num">4</span>, <span class="num">2</span>, <span class="num">6</span>, <span class="num">1</span>, <span class="num">5</span>];
 
-<span class="cm">// map — creates a NEW array by transforming each element</span>
-nums.<span class="fn">map</span>(n =&gt; n * <span class="num">2</span>);             <span class="cm">// [10, 6, 16, 2]</span>
+<span class="cm">// ─── 2. TRANSFORMATIONS & FILTERING ───</span>
+<span class="kw">const</span> doubled  = originalArray.<span class="fn">map</span>(x => x * <span class="num">2</span>);        <span class="cm">// [16, 6, 14, 8, 4, 12, 2, 10]</span>
+<span class="kw">const</span> gt4      = originalArray.<span class="fn">filter</span>(x => x > <span class="num">4</span>);     <span class="cm">// [8, 7, 6, 5]</span>
+<span class="kw">const</span> totalSum = originalArray.<span class="fn">reduce</span>((sum, x) => sum + x, <span class="num">0</span>); <span class="cm">// 36</span>
 
-<span class="cm">// filter — creates a NEW array with elements that pass a test</span>
-nums.<span class="fn">filter</span>(n =&gt; n &gt; <span class="num">3</span>);          <span class="cm">// [5, 8]</span>
+<span class="cm">// ─── 3. SEARCHING & CHECKING ───</span>
+<span class="kw">const</span> firstSmall = originalArray.<span class="fn">find</span>(x => x < <span class="num">4</span>);     <span class="cm">// 3</span>
+<span class="kw">const</span> idxOfSeven = originalArray.<span class="fn">findIndex</span>(x => x === <span class="num">7</span>); <span class="cm">// 2</span>
+<span class="kw">const</span> hasSeven   = originalArray.<span class="fn">includes</span>(<span class="num">7</span>);          <span class="cm">// true</span>
 
-<span class="cm">// reduce — boils array down to a SINGLE accumulated value</span>
-nums.<span class="fn">reduce</span>((sum, n) =&gt; sum + n, <span class="num">0</span>); <span class="cm">// 17</span>
+<span class="cm">// ─── 4. NUMERIC SORTING ───</span>
+<span class="kw">const</span> sortedAsc  = [...originalArray].<span class="fn">sort</span>((a, b) => a - b); <span class="cm">// [1, 2, 3, 4, 5, 6, 7, 8]</span>
+<span class="kw">const</span> sortedDesc = [...originalArray].<span class="fn">sort</span>((a, b) => b - a); <span class="cm">// [8, 7, 6, 5, 4, 3, 2, 1]</span>
 
-<span class="cm">// find — returns the FIRST element that matches</span>
-nums.<span class="fn">find</span>(n =&gt; n &gt; <span class="num">4</span>);            <span class="cm">// 5</span>
+<span class="cm">// ─── 5. MATH & DEDUPLICATION ───</span>
+<span class="kw">const</span> minVal = Math.<span class="fn">min</span>(...originalArray); <span class="cm">// 1</span>
+<span class="kw">const</span> maxVal = Math.<span class="fn">max</span>(...originalArray); <span class="cm">// 8</span>
 
-<span class="cm">// includes — returns true/false if value exists</span>
-nums.<span class="fn">includes</span>(<span class="num">3</span>);                 <span class="cm">// true</span>
-
-<span class="cm">// sort — MUTATES! Needs a compare function for numbers!</span>
-nums.<span class="fn">sort</span>((a, b) =&gt; a - b);       <span class="cm">// [1, 3, 5, 8]</span>
-<span class="cm">// Without compare: [10, 1, 2].sort() → [1, 10, 2] (alphabetic!)</span>
-
-<span class="cm">// ─── 2. STRING METHODS ───</span>
-<span class="str">"Hello World"</span>.<span class="fn">toLowerCase</span>();      <span class="cm">// "hello world"</span>
-<span class="str">"  trim me  "</span>.<span class="fn">trim</span>();             <span class="cm">// "trim me"</span>
-<span class="str">"a,b,c"</span>.<span class="fn">split</span>(<span class="str">","</span>);               <span class="cm">// ["a", "b", "c"]</span>
-<span class="str">"hello"</span>.<span class="fn">slice</span>(<span class="num">1</span>, <span class="num">3</span>);             <span class="cm">// "el"</span>
-<span class="str">"hello"</span>.<span class="fn">includes</span>(<span class="str">"ell"</span>);         <span class="cm">// true</span>
-<span class="str">"hello"</span>.<span class="fn">indexOf</span>(<span class="str">"l"</span>);            <span class="cm">// 2 (first occurrence index)</span>
-
-<span class="cm">// ─── 3. MATH OBJECT ───</span>
-Math.<span class="fn">max</span>(<span class="num">1</span>, <span class="num">5</span>, <span class="num">3</span>);    <span class="cm">// 5</span>
-Math.<span class="fn">min</span>(<span class="num">1</span>, <span class="num">5</span>, <span class="num">3</span>);    <span class="cm">// 1</span>
-Math.<span class="fn">floor</span>(<span class="num">4.7</span>);      <span class="cm">// 4 — rounds DOWN</span>
-Math.<span class="fn">ceil</span>(<span class="num">4.1</span>);       <span class="cm">// 5 — rounds UP</span>
-Math.<span class="fn">abs</span>(-<span class="num">7</span>);         <span class="cm">// 7 — absolute value</span>
-Math.<span class="fn">random</span>();        <span class="cm">// random float, 0 &lt;= x &lt; 1</span>
-
-<span class="cm">// ─── 4. JSON: Serialize & Deserialize ───</span>
-<span class="kw">const</span> obj = { a: <span class="num">1</span>, b: <span class="str">"hi"</span> };
-<span class="kw">const</span> jsonStr = JSON.<span class="fn">stringify</span>(obj);  <span class="cm">// '{"a":1,"b":"hi"}'</span>
-<span class="kw">const</span> parsed  = JSON.<span class="fn">parse</span>(jsonStr);  <span class="cm">// { a: 1, b: "hi" }</span>
-
-<span class="cm">// ─── 5. MAP: Any-Type Keys, Ordered ───</span>
-<span class="kw">const</span> scores = <span class="kw">new</span> <span class="fn">Map</span>();
-scores.<span class="fn">set</span>(<span class="str">"alex"</span>, <span class="num">90</span>);
-scores.<span class="fn">set</span>(<span class="str">"jordan"</span>, <span class="num">85</span>);
-scores.<span class="fn">get</span>(<span class="str">"alex"</span>);     <span class="cm">// 90</span>
-scores.<span class="fn">has</span>(<span class="str">"jordan"</span>);   <span class="cm">// true</span>
-scores.size;              <span class="cm">// 2</span>
-
-<span class="cm">// ─── 6. SET: Unique Values Only ───</span>
-<span class="kw">const</span> unique = <span class="kw">new</span> <span class="fn">Set</span>([<span class="num">1</span>, <span class="num">2</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">3</span>]);
-<span class="cm">// Set(3) {1, 2, 3} — duplicates auto-removed</span>
-unique.<span class="fn">add</span>(<span class="num">4</span>);      <span class="cm">// Set(4) {1, 2, 3, 4}</span>
-unique.<span class="fn">has</span>(<span class="num">2</span>);      <span class="cm">// true</span>
-unique.size;         <span class="cm">// 4</span>
-
-<span class="cm">// Quick trick: remove duplicates from any array</span>
-<span class="kw">const</span> deduped = [...<span class="kw">new</span> <span class="fn">Set</span>([<span class="num">1</span>, <span class="num">2</span>, <span class="num">2</span>, <span class="num">3</span>])]; <span class="cm">// [1, 2, 3]</span>`,
+<span class="kw">const</span> numbersWithDuplicates = [...originalArray, <span class="num">3</span>, <span class="num">5</span>, <span class="num">3</span>];
+<span class="kw">const</span> deduped = [...<span class="kw">new</span> <span class="fn">Set</span>(numbersWithDuplicates)]; <span class="cm">// [8, 3, 7, 4, 2, 6, 1, 5]</span>`,
 
   complexityNotes: [
-    "map / filter / forEach / find: O(n) — iterates every element once.",
-    "reduce: O(n) — single pass through the array (callback complexity may add more).",
-    "includes / indexOf: O(n) — linear scan (worst case: element at end or not found).",
-    "sort: O(n log n) — V8 uses TimSort internally.",
-    "Set.has / Map.get / Map.has: O(1) average — hash-based lookup.",
-    "JSON.stringify / JSON.parse: O(n) — must visit every key-value pair."
+    "map / filter / reduce / forEach / find / includes: O(n) time — single pass over the array.",
+    "slice: O(k) time where k is slice length.",
+    "splice / shift / unshift: O(n) time because remaining elements must be re-indexed in memory.",
+    "sort: O(n log n) time — V8 engine uses TimSort.",
+    "Set.has / Set.add / Map.get / Map.set: O(1) average time complexity."
   ],
 
   commonMistakes: [
     {
-      title: "Mistake 1: sort() without a compare function for numbers",
-      desc: "Without a compare function, <code>sort()</code> converts elements to strings and sorts alphabetically, so <code>[10, 1, 2].sort()</code> gives <code>[1, 10, 2]</code>, not <code>[1, 2, 10]</code>. Always pass a compare function like <code>(a, b) =&gt; a - b</code> for numeric sorting."
+      title: "Mistake 1: Confusing slice() vs splice()",
+      desc: "<code>slice(start, end)</code> returns a <strong>new copy</strong> without altering the original array. <code>splice(start, deleteCount, ...items)</code> <strong>mutates the original array in place</strong> by removing or replacing items."
     },
     {
-      title: "Mistake 2: Confusing mutating vs non-mutating methods",
-      desc: "Methods that <strong>mutate</strong> the original array: <code>sort</code>, <code>splice</code>, <code>reverse</code>, <code>push</code>/<code>pop</code>/<code>shift</code>/<code>unshift</code>. Methods that <strong>return a new array</strong> and leave the original untouched: <code>map</code>, <code>filter</code>, <code>slice</code>, <code>concat</code>. Mixing these up causes subtle bugs when you didn't intend to modify the original."
+      title: "Mistake 2: Calling sort() on numbers without a comparator",
+      desc: "Calling <code>[8, 3, 7, 4, 2, 6, 1, 5].sort()</code> converts elements to strings and compares alphabetically. Always pass a comparison function: <code>(a, b) => a - b</code> for numeric sorting."
     },
     {
-      title: "Mistake 3: Using JSON deep clone on complex objects",
-      desc: "Using <code>JSON.parse(JSON.stringify(obj))</code> as a general 'deep clone' works for plain, simple data, but silently drops <code>functions</code>, <code>undefined</code> values, and <code>Symbol</code>s, breaks on circular references, and converts special types like <code>Date</code> into plain strings (losing their <code>Date</code> behavior) and <code>Map</code>/<code>Set</code> into <code>{}</code>."
+      title: "Mistake 3: Expecting string methods to mutate the original string",
+      desc: "Strings are immutable. Writing <code>str.trim()</code> or <code>str.toUpperCase()</code> returns a new string; it does not change <code>str</code> in place."
+    },
+    {
+      title: "Mistake 4: Using JSON.stringify() to deep clone objects with functions or undefined",
+      desc: "<code>JSON.stringify()</code> silently omits functions, <code>undefined</code> values, and <code>Symbol</code>s, and converts <code>Map</code> and <code>Set</code> objects into empty objects."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. Given originalArray = [8, 3, 7, 4, 2, 6, 1, 5], what does originalArray.filter(x => x > 4) return?",
+      options: ["A. [8, 7, 6, 5]", "B. [8, 3, 7]", "C. [5, 6, 7, 8]", "D. [4, 5, 6, 7, 8]"],
+      answer: "A",
+      explanation: "filter() returns a new array with elements strictly greater than 4: [8, 7, 6, 5]."
+    },
+    {
+      question: "Q2. What does originalArray.reduce((sum, x) => sum + x, 0) return for [8, 3, 7, 4, 2, 6, 1, 5]?",
+      options: ["A. 36", "B. 32", "C. 40", "D. 8"],
+      answer: "A",
+      explanation: "The total sum of 8 + 3 + 7 + 4 + 2 + 6 + 1 + 5 is 36."
+    },
+    {
+      question: "Q3. Which of these methods mutates the working array in place?",
+      options: ["A. slice()", "B. splice()", "C. map()", "D. filter()"],
+      answer: "B",
+      explanation: "splice() mutates the original array in place; slice(), map(), and filter() return new copies."
+    },
+    {
+      question: "Q4. How do you remove duplicate numbers from [...originalArray, 3, 5, 3] in one line?",
+      options: [
+        "A. [...new Set(numbersWithDuplicates)]",
+        "B. numbersWithDuplicates.sort()",
+        "C. numbersWithDuplicates.slice()",
+        "D. JSON.stringify(numbersWithDuplicates)"
+      ],
+      answer: "A",
+      explanation: "Passing the array to new Set() filters duplicates in O(n) time, and spreading [...Set] converts it back to an array."
+    }
+  ],
+
+  predictOutput: [
+    {
+      code: "const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];\nconst res = originalArray.slice(1, 4);\nconsole.log(res);",
+      options: ["[3, 7, 4]", "[8, 3, 7]", "[3, 7, 4, 2]", "[7, 4, 2]"],
+      answer: "[3, 7, 4]",
+      explanation: "slice(1, 4) extracts elements from index 1 up to (but excluding) index 4: [3, 7, 4]."
+    },
+    {
+      code: "const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];\nconsole.log(Math.min(...originalArray));",
+      options: ["1", "8", "0", "NaN"],
+      answer: "1",
+      explanation: "Math.min spreads the array elements and returns the smallest value, which is 1."
+    },
+    {
+      code: "const str = '  Learn DSA  ';\nstr.trim();\nconsole.log(str.length);",
+      options: ["13", "9", "11", "0"],
+      answer: "13",
+      explanation: "Strings are immutable. str.trim() returns a new trimmed string, but str itself remains 13 characters long."
     }
   ],
 
   practice: [
     {
-      q: "Question 1: What does `[10, 1, 2].sort()` output with no compare function, and why?",
-      a: "It outputs `[1, 10, 2]`. Without a compare function, `sort()` converts elements to strings first, then sorts alphabetically. The string \"10\" comes before \"2\" because \"1\" < \"2\" in character code order."
+      q: "Question 1: Explain why every demonstration for Core Built-ins starts with const workingArray = [...originalArray].",
+      a: "Starting each demo with a fresh shallow copy `[...originalArray]` guarantees that running a mutating method (like `splice` or `sort`) never alters the starting state for other method demonstrations."
     },
     {
-      q: "Question 2: Which of these mutate the original array: `map`, `sort`, `filter`, `splice`, `slice`?",
-      a: "Only `sort` and `splice` mutate the original array. `map`, `filter`, and `slice` all return new arrays and leave the original untouched."
+      q: "Question 2: What is the difference between Math.floor(), Math.ceil(), and Math.trunc()?",
+      a: "`Math.floor()` rounds down toward negative infinity; `Math.ceil()` rounds up toward positive infinity; `Math.trunc()` truncates the decimal portion completely."
     },
     {
-      q: "Question 3: Name one real limitation of using `JSON.parse(JSON.stringify(x))` to clone an object.",
-      a: "It silently drops functions, `undefined` values, and Symbols. It also breaks on circular references (throws an error), and converts Dates into plain strings, losing their Date prototype methods. Map and Set become empty objects `{}`."
+      q: "Question 3: Why is Map preferred over plain Objects for frequency counting in DSA?",
+      a: "`Map` supports keys of any type, maintains insertion order, provides an $O(1)$ size property (`map.size`), and avoids prototype inheritance clashes."
     }
   ],
 
   challenge: {
-    titleText: "Challenge: Array Built-ins Pipeline",
-    desc: "Given an array of student objects (e.g. <code>[{ name: \"A\", score: 80 }, { name: \"B\", score: 45 }, { name: \"C\", score: 92 }]</code>), use only array built-ins (<code>filter</code>, <code>map</code>, <code>reduce</code> — no manual <code>for</code> loop) to: 1) filter students who scored above 50, 2) extract their scores with <code>map</code>, and 3) compute the average passing score with <code>reduce</code>. Chain all three calls into a single expression."
+    titleText: "Challenge: Core Built-ins Pipeline",
+    desc: "Starting with <code>const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];</code>, chain array built-ins (<code>filter</code>, <code>map</code>, <code>reduce</code> — no manual loops) to: 1) filter numbers <code>> 3</code>, 2) double each number, and 3) compute the final sum. The result should be <code>60</code>."
   }
 };
+
+window.LESSONS_CONTENT["core-builtins"] = coreBuiltInsContent;
+window.LESSONS_CONTENT["core-built-ins"] = coreBuiltInsContent;

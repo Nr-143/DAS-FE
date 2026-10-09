@@ -17,6 +17,7 @@ window.LESSONS_CONTENT["variables-and-memory"] = {
   title: "Variables & Memory",
   levelTitle: "Level 1 — Foundations",
   summary: "Learn what variables really represent, how values are stored conceptually, and why memory matters when learning DSA.",
+  interactiveWidget: "memory-playground",
 
   whyMatters: "Understanding variables and memory is the foundation of computer programming and DSA. Every algorithm you write reads from, modifies, and organizes memory.",
 

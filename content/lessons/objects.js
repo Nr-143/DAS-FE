@@ -40,6 +40,7 @@ window.LESSONS_CONTENT["objects"] = {
   title: "Objects",
   levelTitle: "Level 1 — Foundations",
   summary: "Learn how objects group related data, how properties work, and why references make objects behave differently from primitive values.",
+  interactiveWidget: "objects-visualizer",
   whyMatters: "Objects are the fundamental structured data type in programming. Understanding key-value properties and reference memory allocation forms the foundation for data structures like Linked Lists, Trees, Graphs, and Hash Tables.",
 
   sections: [

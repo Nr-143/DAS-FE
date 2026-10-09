@@ -20,6 +20,7 @@ window.LESSONS_CONTENT["primitives"] = {
   title: "Primitives",
   levelTitle: "Level 1 — Foundations",
   summary: "Learn JavaScript's 7 primitive data types, value immutability, pass-by-value assignment, and common language quirks.",
+  interactiveWidget: "primitives-visualizer",
   whyMatters: "Primitive values are the fundamental building blocks of computer memory and algorithms. Understanding immutability, copy-by-value semantics, and language quirks ensures bug-free algorithm development.",
 
   sections: [
