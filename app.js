@@ -282,6 +282,12 @@
       .replace(/'/g, '&#039;');
   }
 
+  function formatContent(str) {
+    if (str === null || str === undefined) return '';
+    if (typeof str !== 'string') return String(str);
+    return str.replace(/`([^`]+)`/g, '<code>$1</code>');
+  }
+
   function renderHeaderAuthUI() {
     const $container = document.getElementById('header-auth-container');
     if (!$container) return;
@@ -1171,8 +1177,8 @@
 
       const defCards = content.definitions.map(d => `
         <div class="def-card">
-          <div class="def-term">${SVG_ICONS.bookmark} ${escapeHtml(d.term)}</div>
-          <div class="def-desc">${escapeHtml(d.def)}</div>
+          <div class="def-term">${SVG_ICONS.bookmark} ${formatContent(d.term)}</div>
+          <div class="def-desc">${formatContent(d.def)}</div>
         </div>
       `).join('');
 
@@ -1181,7 +1187,7 @@
         <div class="def-list">${defCards}</div>
         <div class="combined-flow-box">
           <div class="combined-flow-box__title">${SVG_ICONS.zap} How it all works together</div>
-          <div>${content.howItWorksTogether}</div>
+          <div>${formatContent(content.howItWorksTogether)}</div>
         </div>
       `;
       panel.appendChild(defSection);
@@ -1195,7 +1201,7 @@
       whySec.innerHTML = `
         <h2 class="lesson-section__title">${sectionCount++}. Why This Actually Matters</h2>
         <div class="lesson-section__body" style="font-size:0.98rem; line-height:1.65; color:var(--text-primary); background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default); border-left:4px solid var(--accent-primary);">
-          <p style="margin:0;">${content.whyMatters}</p>
+          <p style="margin:0;">${formatContent(content.whyMatters)}</p>
         </div>
       `;
       panel.appendChild(whySec);
@@ -1209,11 +1215,11 @@
       bigPicSec.id = 'section-big-picture';
 
       bigPicSec.innerHTML = `
-        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(bp.title)}</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. ${formatContent(bp.title)}</h2>
         <div class="lesson-section__body" style="display:flex; flex-direction:column; gap:16px; font-size:0.95rem; line-height:1.65; color:var(--text-primary);">
           
           <div style="background:var(--bg-surface); padding:18px 20px; border-radius:10px; border:1px solid var(--border-default); display:flex; flex-direction:column; gap:10px;">
-            <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(bp.familiesHeading)}</div>
+            <div style="font-weight:700; color:var(--text-primary);">${formatContent(bp.familiesHeading)}</div>
             <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">
               <li>${bp.linearText}</li>
               <li>${bp.nonlinearText}</li>
@@ -1221,7 +1227,7 @@
           </div>
 
           <div style="background:var(--bg-surface); padding:18px 20px; border-radius:10px; border:1px solid var(--border-default); display:flex; flex-direction:column; gap:10px;">
-            <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(bp.categoriesHeading)}</div>
+            <div style="font-weight:700; color:var(--text-primary);">${formatContent(bp.categoriesHeading)}</div>
             <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">
               <li>${bp.searchSortText}</li>
               <li>${bp.recursionText}</li>
@@ -1230,13 +1236,14 @@
           </div>
 
           <div style="background:var(--accent-gradient-subtle); padding:14px 18px; border-radius:8px; border:1px solid var(--border-accent); color:var(--text-primary); font-weight:500;">
-            💡 <strong>Note:</strong> ${escapeHtml(bp.closingText)}
+            💡 <strong>Note:</strong> ${formatContent(bp.closingText)}
           </div>
 
         </div>
       `;
       panel.appendChild(bigPicSec);
     }
+
 
     // 4. Interactive Big-O Explorer
     if (content.notations && content.notations.length > 0) {
@@ -1382,16 +1389,16 @@
       tradeSec.id = 'section-trade-offs';
 
       tradeSec.innerHTML = `
-        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(to.title)}</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. ${formatContent(to.title)}</h2>
         <div class="lesson-section__body" style="display:flex; flex-direction:column; gap:14px; font-size:0.95rem; line-height:1.65; color:var(--text-primary);">
           <blockquote style="margin:0; padding:14px 18px; background:var(--bg-surface); border-left:4px solid var(--accent-primary); border-radius:0 8px 8px 0; font-weight:500; font-style:italic;">
-            "${escapeHtml(to.corePoint)}"
+            "${formatContent(to.corePoint)}"
           </blockquote>
           <div style="background:var(--bg-surface); padding:16px 20px; border-radius:10px; border:1px solid var(--border-default);">
             ${to.comparisonText}
           </div>
           <p style="margin:0; font-weight:500; color:var(--text-secondary);">
-            ${escapeHtml(to.closingText)}
+            ${formatContent(to.closingText)}
           </p>
         </div>
       `;
@@ -1405,8 +1412,8 @@
       mistakesSec.id = 'section-common-mistakes';
       const cards = content.commonMistakes.map(m => `
         <div class="mistake-card">
-          <div class="mistake-card__title">${SVG_ICONS.alertTriangle} ${escapeHtml(m.title)}</div>
-          <div class="mistake-card__desc">${m.desc}</div>
+          <div class="mistake-card__title">${SVG_ICONS.alertTriangle} ${formatContent(m.title)}</div>
+          <div class="mistake-card__desc">${formatContent(m.desc)}</div>
         </div>
       `).join('');
       mistakesSec.innerHTML = `
@@ -1425,10 +1432,10 @@
       const items = content.realWorldDsa.map(rw => `
         <div class="def-card" style="margin-bottom: 12px;">
           <div class="def-term" style="display:flex; align-items:center; gap:8px;">
-            ${SVG_ICONS.zap || ''} <strong>${escapeHtml(rw.item)}</strong> &rarr; <span style="color:var(--accent-primary); font-weight:700;">${escapeHtml(rw.structure)}</span>
+            ${SVG_ICONS.zap || ''} <strong>${formatContent(rw.item)}</strong> &rarr; <span style="color:var(--accent-primary); font-weight:700;">${formatContent(rw.structure)}</span>
           </div>
           <div class="def-desc" style="color:var(--text-secondary); margin-top:4px;">
-            ${escapeHtml(rw.note)}
+            ${formatContent(rw.note)}
           </div>
         </div>
       `).join('');
@@ -1455,7 +1462,7 @@
             ${SVG_ICONS.bookOpen || ''} <span>Did you know?</span>
           </div>
           <div style="color:var(--text-primary); margin-top:6px; line-height:1.6;">
-            ${escapeHtml(content.historyFact)}
+            ${formatContent(content.historyFact)}
           </div>
         </div>
       `;
@@ -1470,13 +1477,13 @@
       langSec.id = 'section-language-agnostic';
 
       langSec.innerHTML = `
-        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(la.title)}</h2>
+        <h2 class="lesson-section__title">${sectionCount++}. ${formatContent(la.title)}</h2>
         <div class="combined-flow-box" style="border-left: 4px solid var(--accent-primary);">
           <div class="combined-flow-box__title" style="display:flex; align-items:center; gap:8px;">
             ${SVG_ICONS.globe || ''} <span>Universal Concepts</span>
           </div>
           <div style="color:var(--text-primary); margin-top:6px; line-height:1.65; font-size:0.95rem;">
-            ${escapeHtml(la.text)}
+            ${formatContent(la.text)}
           </div>
         </div>
       `;
@@ -1525,7 +1532,7 @@
               </div>
 
               <div style="font-weight:600; color:var(--text-primary); margin-bottom:12px; font-size:0.95rem;">
-                ${escapeHtml(q.question)}
+                ${formatContent(q.question)}
               </div>
 
               ${q.code ? `<pre class="code-block" style="margin-bottom:14px;"><code>${escapeHtml(q.code)}</code></pre>` : ''}
@@ -1536,7 +1543,7 @@
           const isCorrect = letter === q.answer || opt === q.answer;
           return `
                     <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
-                      ${escapeHtml(opt)}
+                      ${formatContent(opt)}
                     </button>
                   `;
         }).join('')}
@@ -1601,7 +1608,7 @@
                 expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
                 expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
                 expEl.style.color = 'var(--text-primary)';
-                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${formatContent(qData.explanation)}`;
               }
             });
           });
@@ -1618,7 +1625,7 @@
       const cards = content.miniQuiz.map((q, idx) => `
         <div class="quiz-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; padding:20px; margin-bottom:16px;">
           <div style="font-weight:700; color:var(--text-primary); margin-bottom:12px; font-size:0.98rem;">
-            ${escapeHtml(q.question)}
+            ${formatContent(q.question)}
           </div>
           <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
             ${q.options.map(opt => {
@@ -1626,7 +1633,7 @@
         const isCorrect = letter === q.answer || opt === q.answer;
         return `
                 <button class="quiz-opt-btn" data-correct="${isCorrect}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-size:0.88rem; transition:all 0.2s ease;">
-                  ${escapeHtml(opt)}
+                  ${formatContent(opt)}
                 </button>
               `;
       }).join('')}
@@ -1672,7 +1679,7 @@
                 expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
                 expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
                 expEl.style.color = 'var(--text-primary)';
-                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${formatContent(qData.explanation)}`;
               }
             });
           });
@@ -1695,7 +1702,7 @@
           <div class="quiz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
             ${q.options.map(opt => `
               <button class="quiz-opt-btn" data-correct="${opt === q.answer}" style="padding:10px 14px; text-align:left; background:var(--bg-body); border:1px solid var(--border-default); border-radius:8px; color:var(--text-primary); font-weight:600; cursor:pointer; font-family:'Fira Code',monospace; font-size:0.88rem; transition:all 0.2s ease;">
-                ${escapeHtml(opt)}
+                ${formatContent(opt)}
               </button>
             `).join('')}
           </div>
@@ -1740,7 +1747,7 @@
                 expEl.style.background = isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
                 expEl.style.border = isCorrect ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
                 expEl.style.color = 'var(--text-primary)';
-                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${escapeHtml(qData.explanation)}`;
+                expEl.innerHTML = `<strong>${isCorrect ? 'Correct! 🎉' : 'Incorrect ❌'}</strong> ${formatContent(qData.explanation)}`;
               }
             });
           });
@@ -1754,11 +1761,11 @@
       practiceSec.id = 'section-practice-questions';
       const cards = content.practice.map((q, idx) => `
         <div class="practice-item">
-          <div class="practice-question">${escapeHtml(q.q)}</div>
+          <div class="practice-question">${formatContent(q.q)}</div>
           <button class="btn-reveal-answer" data-target="ans-${idx}">
             ${SVG_ICONS.eye} Reveal Answer
           </button>
-          <div class="practice-answer" id="ans-${idx}">${escapeHtml(q.a)}</div>
+          <div class="practice-answer" id="ans-${idx}">${formatContent(q.a)}</div>
         </div>
       `).join('');
       practiceSec.innerHTML = `
@@ -1788,8 +1795,8 @@
       challengeSec.innerHTML = `
         <h2 class="lesson-section__title">${sectionNum++}. Challenge Problem</h2>
         <div class="challenge-card">
-          <div class="challenge-card__title">${SVG_ICONS.flame} ${escapeHtml(content.challenge.titleText)}</div>
-          <div class="challenge-card__desc">${content.challenge.desc}</div>
+          <div class="challenge-card__title">${SVG_ICONS.flame} ${formatContent(content.challenge.titleText)}</div>
+          <div class="challenge-card__desc">${formatContent(content.challenge.desc)}</div>
         </div>
       `;
       panel.appendChild(challengeSec);
@@ -1805,12 +1812,12 @@
         <div class="interview-q-card" style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:10px; padding:16px 20px; margin-bottom:12px;">
           <div class="interview-q-header" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
             <div style="font-weight:700; color:var(--text-primary); font-size:0.95rem; display:flex; align-items:center; gap:8px;">
-              <span style="color:var(--accent-primary);">Q${idx + 1}.</span> ${escapeHtml(iq.q)}
+              <span style="color:var(--accent-primary);">Q${idx + 1}.</span> ${formatContent(iq.q)}
             </div>
             <span class="interview-q-chevron" style="transition:transform 0.2s ease; color:var(--text-muted);">${SVG_ICONS.chevronDown}</span>
           </div>
           <div class="interview-q-answer" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary); line-height:1.65; font-size:0.92rem;">
-            ${iq.a}
+            ${formatContent(iq.a)}
           </div>
         </div>
       `).join('');
