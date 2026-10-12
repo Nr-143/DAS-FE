@@ -1,7 +1,8 @@
 /**
- * DSA Tracker — Lesson Content: Arrays
- * ──────────────────────────────────────
- * Independent content module adhering to schema.
+ * DSA Tracker — Lesson Content: Arrays (Level 2)
+ * ───────────────────────────────────────────────
+ * Comprehensive interactive module: Concept, Operations (CRUD),
+ * Internal Memory Models, Visualizer integration, and Practice.
  */
 
 window.LESSONS_CONTENT = window.LESSONS_CONTENT || {};
@@ -10,121 +11,141 @@ window.LESSONS_CONTENT["arrays"] = {
   id: "arrays",
   title: "Arrays",
   levelTitle: "Level 2 — Linear Data Structures",
-  summary: "Understand how arrays provide O(1) random access, how insert/delete costs differ by position, and how JavaScript's dynamic arrays work under the hood.",
+  summary: "Master contiguous indexing, O(1) random access by memory offset calculation, shifting costs on insert/delete, and how JavaScript's dynamic arrays work under the hood.",
 
   definitions: [
     {
       term: "Array",
-      def: "An ordered, indexable collection of elements, accessed by a numeric position (index) starting at 0."
+      def: "A linear data structure consisting of a collection of elements identified by index, stored in contiguous memory locations so that the position of each element can be calculated directly via mathematical offset."
     },
     {
-      term: "Index",
-      def: "The numeric position of an element in an array, starting at 0, not 1."
+      term: "Zero-based Index",
+      def: "A numbering system starting at 0 representing the distance or 'offset' from the beginning of the array. The first element is at offset 0, second at offset 1."
     },
     {
-      term: "Contiguous-style Access",
-      def: "An array's layout lets the position of any element be calculated directly from its index, which is what makes direct access O(1)."
+      term: "Contiguous Memory & Random Access",
+      def: "Memory cells located sequentially right next to each other. Because each cell has a uniform size, address of index i is computed directly as <code>BaseAddress + (i * ElementSize)</code> in O(1) time without visiting any preceding elements."
     },
     {
-      term: "Dynamic Array",
-      def: "The kind JavaScript uses: it automatically grows/shrinks as elements are added or removed, unlike a fixed-size array in lower-level languages."
+      term: "Dynamic Array vs. Static Array",
+      def: "Static arrays (C, Java) have a fixed size allocated at creation. JavaScript arrays are dynamic: they automatically resize by allocating a larger memory buffer (usually 1.5x or 2x) and copying existing elements when capacity is exceeded."
+    },
+    {
+      term: "Element Shifting",
+      def: "When inserting or deleting at any position other than the very end, all subsequent elements must physically move one index right or left to maintain contiguous sequential order — an O(n) linear time operation."
     }
   ],
 
-  howItWorksTogether: "Arrays give O(1) random access because any element's position is directly computable from its index — no searching required. But inserting or removing anywhere except the very end is O(n), because every element after that point has to shift to a new index.",
+  howItWorksTogether: "Arrays provide instantaneous O(1) read and write access because the computer can calculate any element's memory address with a single multiplication and addition. However, this contiguous arrangement creates a trade-off: inserting or removing elements in the middle or beginning forces every element to shift, taking O(n) time. Dynamic arrays mitigate reallocation overhead using amortized O(1) append operations at the end.",
 
-  visual: {
-    caption: "Figure 1: Array index layout — each element maps to a numeric index starting at 0. Access by index is O(1); insertion at the start requires shifting every element.",
-    diagramSvg: `
-      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
-        <rect width="700" height="220" fill="var(--bg-body)" rx="12" />
-        <text x="350" y="30" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Array: O(1) Access by Index</text>
-        
-        <g transform="translate(50, 50)">
-          <rect x="0" y="0" width="100" height="50" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="6"/>
-          <text x="50" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 0</text>
-          <text x="50" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"apple"</text>
-          
-          <rect x="110" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
-          <text x="160" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 1</text>
-          <text x="160" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"banana"</text>
-          
-          <rect x="220" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
-          <text x="270" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 2</text>
-          <text x="270" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"cherry"</text>
-          
-          <rect x="330" y="0" width="100" height="50" fill="rgba(109,76,154,0.12)" stroke="#6d4c9a" stroke-width="2" rx="6"/>
-          <text x="380" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 3</text>
-          <text x="380" y="40" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">"date"</text>
-          
-          <rect x="440" y="0" width="100" height="50" fill="rgba(184,74,74,0.12)" stroke="#b84a4a" stroke-width="2" rx="6" stroke-dasharray="5,3"/>
-          <text x="490" y="22" fill="var(--text-muted)" font-size="11" text-anchor="middle">index 4</text>
-          <text x="490" y="40" fill="#f87171" font-size="12" font-weight="bold" text-anchor="middle">undefined</text>
-        </g>
-        
-        <g transform="translate(50, 120)">
-          <rect width="600" height="70" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="25" fill="#34d399" font-size="12" font-weight="bold">arr[0] → O(1)</text>
-          <text x="20" y="45" fill="var(--text-secondary)" font-size="11">Direct jump — no scanning needed. Position computed from index.</text>
-          <text x="320" y="25" fill="#f87171" font-size="12" font-weight="bold">arr.unshift("kiwi") → O(n)</text>
-          <text x="320" y="45" fill="var(--text-secondary)" font-size="11">Every element must shift right to make room at index 0.</text>
-        </g>
-      </svg>
-    `
+  whyMatters: "Arrays are the most ubiquitous foundation in computer science. Hash tables, heaps, circular queues, dynamic programming tables, and matrix representations are all built directly on top of arrays. Understanding when array operations are fast (end operations, index access) versus slow (unshift, middle splice) is essential for writing performant software.",
+
+  interactiveWidget: "array-visualizer",
+
+  workedExample: {
+    title: "Array Memory Offset Math & CRUD Operations",
+    primitiveText: "<code>// Memory Calculation Formula:<br/>// Address(arr[i]) = BaseAddress + (i * ElementSize)<br/>const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];<br/><br/>// 1. Read: originalArray[2] → 7 (O(1))<br/>// 2. Add: originalArray.push(9) → [..., 9] (O(1) amortized)<br/>// 3. Insert: insert 10 at index 3 → shifts indices 3..7 right (O(n))<br/>// 4. Update: originalArray[4] = 99 (O(1))<br/>// 5. Delete: delete index 2 → shifts remaining elements left (O(n))</code>",
+    referenceText: "Notice that accessing index 7 takes the exact same single instruction as accessing index 0 — no scanning required!"
   },
 
-  codeSnippet: `<span class="cm">// Array basics — access, push, unshift, splice</span>
-<span class="kw">const</span> fruits = [<span class="str">"apple"</span>, <span class="str">"banana"</span>, <span class="str">"cherry"</span>];
+  codeSnippet: `// Standard Array Operations in JavaScript
+const originalArray = [8, 3, 7, 4, 2, 6, 1, 5];
 
-fruits[<span class="num">0</span>];               <span class="cm">// "apple" — O(1) access</span>
-fruits.<span class="fn">push</span>(<span class="str">"date"</span>);     <span class="cm">// add to end — O(1) amortized</span>
-fruits.<span class="fn">unshift</span>(<span class="str">"kiwi"</span>);  <span class="cm">// add to start — O(n), everything shifts</span>
-fruits.<span class="fn">splice</span>(<span class="num">1</span>, <span class="num">1</span>);     <span class="cm">// remove index 1 — O(n), everything after shifts</span>`,
+// 1. READ / ACCESS — O(1)
+const val = originalArray[2]; // 7
+
+// 2. TRAVERSE / SEARCH — O(n)
+for (let i = 0; i < originalArray.length; i++) {
+  if (originalArray[i] === 4) console.log("Found at index", i);
+}
+
+// 3. ADD TO END (push) — O(1) amortized
+originalArray.push(9); // [8, 3, 7, 4, 2, 6, 1, 5, 9]
+
+// 4. INSERT AT INDEX (splice) — O(n) due to shifting
+originalArray.splice(3, 0, 10); // inserts 10 at index 3
+
+// 5. UPDATE ELEMENT — O(1) in-place rewrite
+originalArray[4] = 99;
+
+// 6. DELETE BY INDEX — O(n) due to left shifting
+const removed = originalArray.splice(2, 1); // removes index 2`,
 
   complexityNotes: [
-    "Access by Index: O(1) Constant Time.",
-    "push() / pop() (end): O(1) Amortized Time.",
-    "unshift() / shift() (start): O(n) Linear Time — every element shifts.",
-    "Search (unsorted): O(n) Linear Time — must scan element by element."
+    "Access by Index: O(1) Constant Time — direct hardware pointer arithmetic.",
+    "Search (Unsorted): O(n) Linear Time — must check elements one by one.",
+    "Append at End (push): O(1) Amortized Constant Time.",
+    "Insert at Index / unshift: O(n) Linear Time — shifts elements to the right.",
+    "Delete at Index / shift: O(n) Linear Time — shifts elements to the left.",
+    "Space Complexity: O(n) contiguous memory allocation."
   ],
 
   commonMistakes: [
     {
-      title: "Mistake 1: Assuming insert/delete anywhere is O(1) like access is",
-      desc: "Only end operations (<code>push</code>/<code>pop</code>) are fast. Inserting or removing at any other position is <code>O(n)</code> because every element after that point has to shift to a new index."
+      title: "Mistake 1: Confusing Array Index with Array Length (Off-by-One)",
+      desc: "Because arrays are zero-indexed, an array with <code>n</code> items has valid indices from <code>0</code> to <code>n - 1</code>. Accessing <code>arr[arr.length]</code> is always outside bounds and returns <code>undefined</code>."
     },
     {
-      title: "Mistake 2: Off-by-one errors with array indices",
-      desc: "An array of length <code>n</code> has valid indices <code>0</code> to <code>n - 1</code>, never <code>n</code>. Accessing <code>arr[arr.length]</code> returns <code>undefined</code>, not the last element."
+      title: "Mistake 2: Using unshift() or shift() in loops",
+      desc: "<code>unshift()</code> and <code>shift()</code> operate at index 0, requiring every single existing element to shift right or left. Calling <code>shift()</code> inside a loop of size n results in disastrous <code>O(n²)</code> quadratic time!"
+    },
+    {
+      title: "Mistake 3: Believing array copy is in-place with assignment",
+      desc: "Doing <code>const b = arr;</code> creates a reference copy pointing to the same memory on the heap, NOT an independent clone. Modifying <code>b</code> mutates <code>arr</code>. Use spread <code>const b = [...arr];</code> for a shallow clone."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What allows an array to achieve O(1) constant time access for any index?",
+      options: [
+        "A. Mathematical offset calculation from contiguous memory layout",
+        "B. Pointers stored inside each node pointing to the next node",
+        "C. Binary search executed on the CPU",
+        "D. Dynamic resizing buffers"
+      ],
+      answer: "A",
+      explanation: "Because elements are stored contiguously in memory and each item is the same byte size, memory address = Base + (Index * Size), which evaluates in a single arithmetic CPU instruction."
+    },
+    {
+      question: "Q2. If an array has 1,000 elements, inserting a new element at index 0 requires how many elements to shift?",
+      options: [
+        "A. 0 elements",
+        "B. 1 element",
+        "C. 1,000 elements",
+        "D. 500 elements"
+      ],
+      answer: "C",
+      explanation: "Inserting at index 0 requires all 1,000 existing elements (indices 0 through 999) to shift right by one index to create a vacant slot at index 0, costing O(n) time."
     }
   ],
 
   practice: [
     {
-      q: "Question 1: What's the time complexity of `arr[5]` vs. inserting at `arr[0]`?",
-      a: "`arr[5]` is O(1) — direct index access. Inserting at `arr[0]` (e.g. `unshift()`) is O(n) — every existing element must shift right by one index."
+      q: "Why is push() considered O(1) amortized instead of pure O(1)?",
+      a: "Most push operations simply place the element into the pre-allocated capacity buffer in O(1) time. However, when the buffer is completely full, the runtime must allocate a new buffer (e.g., double the size) and copy all N existing elements over, taking O(n) time. Because doubling occurs infrequently, the average cost over many appends is O(1) amortized."
     },
     {
-      q: "Question 2: Why is `push()` fast but `unshift()` slow?",
-      a: "`push()` appends to the end — no other elements need to move, so it's O(1) amortized. `unshift()` inserts at index 0, forcing every element to shift right by one position — O(n)."
+      q: "What is the difference between accessing an element, searching for an element, and traversing an array?",
+      a: "Accessing looks up an element when the index is already known (O(1)). Searching inspects values sequentially to find where a target value lives (O(n)). Traversing visits every single element in the array to process, transform, or print them (O(n))."
     }
   ],
 
   challenge: {
-    titleText: "Challenge: Rotate Array Left by K",
-    desc: "Write a function that rotates an array left by <code>k</code> positions. For example, rotating <code>[1, 2, 3, 4, 5]</code> left by 2 gives <code>[3, 4, 5, 1, 2]</code>. Try to do it in-place with O(1) extra space."
+    titleText: "Challenge: In-Place Array Rotation by K",
+    desc: "Given an array, rotate it to the right by <code>k</code> steps in-place with O(1) extra space. For example, <code>[8, 3, 7, 4, 2, 6, 1, 5]</code> rotated by 3 becomes <code>[6, 1, 5, 8, 3, 7, 4, 2]</code>. Hint: Reverse the entire array, reverse the first k elements, then reverse the remaining elements!"
   },
 
   leetcodePractice: {
     showProcessCallout: true,
     twoSumNote: true,
-    suggestedStartingNote: "Start with Two Sum (1) as your first problem. Try solving it with brute-force loops first; later, once you've covered Hash Tables, you'll learn how to optimize it from O(n²) → O(n).",
+    suggestedStartingNote: "Start with Two Sum (1). Understand the brute force O(n²) array nested loop first, then learn how hash maps optimize lookups to O(n).",
     problems: [
       { num: 1, title: "Two Sum", concept: "Array + Hash Map", slug: "two-sum", isSuggestedStart: true, roadmapStep: 2, isImmediateNext: true },
-      { num: 121, title: "Best Time to Buy and Sell Stock", concept: "Array", slug: "best-time-to-buy-and-sell-stock", roadmapStep: 4, isImmediateNext: true },
-      { num: 217, title: "Contains Duplicate", concept: "Array + Set", slug: "contains-duplicate", roadmapStep: 3, isImmediateNext: true },
-      { num: 268, title: "Missing Number", concept: "Array", slug: "missing-number" },
-      { num: 136, title: "Single Number", concept: "Array + XOR", slug: "single-number" }
+      { num: 121, title: "Best Time to Buy and Sell Stock", concept: "Array Sliding / Greedy", slug: "best-time-to-buy-and-sell-stock", roadmapStep: 4, isImmediateNext: true },
+      { num: 217, title: "Contains Duplicate", concept: "Array + Hash Set", slug: "contains-duplicate", roadmapStep: 3, isImmediateNext: true },
+      { num: 268, title: "Missing Number", concept: "Array + Math / XOR", slug: "missing-number" },
+      { num: 136, title: "Single Number", concept: "Array + XOR Bitmask", slug: "single-number" }
     ]
   }
 };

@@ -13,26 +13,26 @@
 (function () {
   'use strict';
 
-  /* ────────── Vector SVG Icons Library (Task 2 Spec) ────────── */
+  /* ────────── Vector Iconify Icons Library ────────── */
   const SVG_ICONS = {
-    checkCircle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-    lock: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
-    bookOpen: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-    helpCircle: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`,
-    eye: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
-    eyeOff: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`,
-    penTool: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
-    alertTriangle: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
-    flame: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>`,
-    sun: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-    moon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
-    bookmark: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`,
-    zap: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-    globe: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
-    trendingUp: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
-    film: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>`,
-    code: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-    chevronDown: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+    checkCircle: `<iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon>`,
+    lock: `<iconify-icon icon="lucide:lock" width="15" height="15"></iconify-icon>`,
+    bookOpen: `<iconify-icon icon="lucide:book-open" width="18" height="18"></iconify-icon>`,
+    helpCircle: `<iconify-icon icon="lucide:help-circle" width="18" height="18"></iconify-icon>`,
+    eye: `<iconify-icon icon="lucide:eye" width="14" height="14"></iconify-icon>`,
+    eyeOff: `<iconify-icon icon="lucide:eye-off" width="14" height="14"></iconify-icon>`,
+    penTool: `<iconify-icon icon="lucide:copy" width="16" height="16"></iconify-icon>`,
+    alertTriangle: `<iconify-icon icon="lucide:alert-triangle" width="18" height="18"></iconify-icon>`,
+    flame: `<iconify-icon icon="lucide:flame" width="18" height="18"></iconify-icon>`,
+    sun: `<iconify-icon icon="lucide:sun" width="16" height="16"></iconify-icon>`,
+    moon: `<iconify-icon icon="lucide:moon" width="16" height="16"></iconify-icon>`,
+    bookmark: `<iconify-icon icon="lucide:bookmark" width="16" height="16"></iconify-icon>`,
+    zap: `<iconify-icon icon="lucide:zap" width="16" height="16"></iconify-icon>`,
+    globe: `<iconify-icon icon="lucide:globe" width="16" height="16"></iconify-icon>`,
+    trendingUp: `<iconify-icon icon="lucide:trending-up" width="16" height="16"></iconify-icon>`,
+    film: `<iconify-icon icon="lucide:film" width="16" height="16"></iconify-icon>`,
+    code: `<iconify-icon icon="lucide:code" width="16" height="16"></iconify-icon>`,
+    chevronDown: `<iconify-icon icon="lucide:chevron-down" width="16" height="16"></iconify-icon>`
   };
 
   /* ────────── Constants ────────── */
@@ -575,6 +575,9 @@
   }
 
   function isTopicUnlocked(topicId) {
+    if (window.TOPIC_CONFIG && typeof window.TOPIC_CONFIG.isUnlocked === 'function') {
+      return window.TOPIC_CONFIG.isUnlocked(topicId);
+    }
     const topic = topicsData.find(t => t.id === topicId);
     if (!topic) return false;
     return topic.order <= 10;
@@ -753,7 +756,7 @@
 
       const totalInLevel = levelGroup.topics.length;
       const completedInLevel = levelGroup.topics.filter(t => isCompleted(t.id)).length;
-      const hasUnlocked = levelGroup.level === 1 || completedInLevel > 0;
+      const hasUnlocked = levelGroup.topics.some(t => isTopicUnlocked(t.id));
 
       const header = document.createElement('div');
       header.className = 'level-header';
@@ -1344,9 +1347,18 @@
       const widgetSec = document.createElement('section');
       widgetSec.className = 'lesson-section reveal-on-scroll';
       widgetSec.id = 'section-interactive-widget';
-      let widgetTitle = 'Interactive Widget';
-      if (content.interactiveWidget === 'stack') widgetTitle = 'Interactive Stack Widget';
-      else if (content.interactiveWidget === 'queue') widgetTitle = 'Interactive Queue Widget';
+      let widgetTitle = 'Interactive Execution Visualizer';
+      const iw = content.interactiveWidget;
+      if (iw === 'stack') widgetTitle = 'Interactive Stack Execution Visualizer';
+      else if (iw === 'queue') widgetTitle = 'Interactive Queue & Circular Buffer Visualizer';
+      else if (iw === 'array-visualizer') widgetTitle = 'Interactive Array Operations Visualizer';
+      else if (iw === 'string-visualizer') widgetTitle = 'Interactive String Operations Visualizer';
+      else if (iw === 'singly-linked-list-visualizer') widgetTitle = 'Interactive Singly Linked List Visualizer';
+      else if (iw === 'doubly-linked-list-visualizer') widgetTitle = 'Interactive Doubly Linked List Visualizer';
+      else if (iw === 'binary-trees-visualizer') widgetTitle = 'Interactive Binary Tree Traversals Visualizer';
+      else if (iw === 'bst-visualizer') widgetTitle = 'Interactive Binary Search Tree (BST) Visualizer';
+      else if (iw.startsWith('graph')) widgetTitle = 'Interactive Graph Traversal & Matrix Visualizer';
+      else if (iw === 'es6-visualizer') widgetTitle = 'Interactive ES6+ Syntax Visualizer';
       else widgetTitle = 'Interactive Algorithm Visualizer';
 
       widgetSec.innerHTML = `
@@ -2124,10 +2136,38 @@
     if (!container || !content.interactiveWidget) return;
 
     const wType = content.interactiveWidget;
-    if (wType === 'stack') {
-      activeWidgetCleanup = mountStackWidget(container);
+    if (wType === 'array-visualizer' && typeof window.mountArrayVisualizer === 'function') {
+      activeWidgetCleanup = window.mountArrayVisualizer(container);
+    } else if (wType === 'string-visualizer' && typeof window.mountStringVisualizer === 'function') {
+      activeWidgetCleanup = window.mountStringVisualizer(container);
+    } else if (wType === 'singly-linked-list-visualizer' && typeof window.mountSinglyLinkedListVisualizer === 'function') {
+      activeWidgetCleanup = window.mountSinglyLinkedListVisualizer(container);
+    } else if (wType === 'doubly-linked-list-visualizer' && typeof window.mountDoublyLinkedListVisualizer === 'function') {
+      activeWidgetCleanup = window.mountDoublyLinkedListVisualizer(container);
+    } else if (wType === 'stack') {
+      if (typeof window.mountAdvancedStackVisualizer === 'function') {
+        activeWidgetCleanup = window.mountAdvancedStackVisualizer(container);
+      } else {
+        activeWidgetCleanup = mountStackWidget(container);
+      }
     } else if (wType === 'queue') {
-      activeWidgetCleanup = mountQueueWidget(container);
+      if (typeof window.mountAdvancedQueueVisualizer === 'function') {
+        activeWidgetCleanup = window.mountAdvancedQueueVisualizer(container);
+      } else {
+        activeWidgetCleanup = mountQueueWidget(container);
+      }
+    } else if (wType === 'binary-trees-visualizer' && typeof window.mountBinaryTreesVisualizer === 'function') {
+      activeWidgetCleanup = window.mountBinaryTreesVisualizer(container);
+    } else if (wType === 'bst-visualizer' && typeof window.mountBSTVisualizer === 'function') {
+      activeWidgetCleanup = window.mountBSTVisualizer(container);
+    } else if (wType === 'graph-visualizer' && typeof window.mountGraphVisualizer === 'function') {
+      activeWidgetCleanup = window.mountGraphVisualizer(container, 'repr');
+    } else if (wType === 'graph-bfs-visualizer' && typeof window.mountGraphVisualizer === 'function') {
+      activeWidgetCleanup = window.mountGraphVisualizer(container, 'bfs');
+    } else if (wType === 'graph-dfs-visualizer' && typeof window.mountGraphVisualizer === 'function') {
+      activeWidgetCleanup = window.mountGraphVisualizer(container, 'dfs');
+    } else if (wType === 'es6-visualizer' && typeof window.mountES6Visualizer === 'function') {
+      activeWidgetCleanup = window.mountES6Visualizer(container);
     } else if (wType === 'memory-playground') {
       activeWidgetCleanup = mountMemoryPlayground(container);
     } else if (wType === 'primitives-visualizer') {

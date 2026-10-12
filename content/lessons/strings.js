@@ -1,7 +1,8 @@
 /**
- * DSA Tracker — Lesson Content: Strings
- * ──────────────────────────────────────
- * Independent content module adhering to schema.
+ * DSA Tracker — Lesson Content: Strings (Level 2)
+ * ────────────────────────────────────────────────
+ * Comprehensive interactive module: Concept, Immutability, Operations,
+ * Character Encoding, String Visualizer integration, and Practice.
  */
 
 window.LESSONS_CONTENT = window.LESSONS_CONTENT || {};
@@ -10,139 +11,147 @@ window.LESSONS_CONTENT["strings"] = {
   id: "strings",
   title: "Strings",
   levelTitle: "Level 2 — Linear Data Structures",
-  summary: "Understand string immutability, index-based character access, and why building strings efficiently matters for performance.",
+  summary: "Master string immutability, zero-based character indexing, O(1) character access, why strings differ from arrays, and how to build large strings without O(n²) performance pitfalls.",
 
   definitions: [
     {
       term: "String",
-      def: "An ordered sequence of characters."
+      def: "An ordered, indexed sequence of characters encoded as 16-bit integers (UTF-16 code units in JavaScript)."
     },
     {
-      term: "Immutability",
-      def: "Once created, a string's characters can't be changed in place; any \"modification\" actually produces a brand-new string."
+      term: "String Immutability",
+      def: "In JavaScript, strings are primitive values and are immutable — once created in memory, individual characters can never be modified, added, or deleted in place. Any string method that seems to 'change' text actually allocates a brand-new string object."
     },
     {
-      term: "Index",
-      def: "A string's characters can be accessed by position, starting at 0, the same as an array."
+      term: "Character Access & Code Points",
+      def: "Accessing <code>str[i]</code> or <code>str.charAt(i)</code> returns the character at zero-based offset <code>i</code> in O(1) time."
     },
     {
-      term: "String vs. Array",
-      def: "Strings share indexing/length/iteration with arrays but are not true arrays and don't have array methods like push/splice directly."
+      term: "String vs. Array Distinction",
+      def: "While both strings and arrays have a <code>.length</code> and support index access, arrays are mutable reference objects on the heap with methods like <code>push()</code> and <code>splice()</code>, whereas strings are immutable primitives where <code>s[0] = 'X'</code> fails silently."
+    },
+    {
+      term: "Repeated Concatenation (+ vs. Array.join)",
+      def: "Because strings are immutable, repeatedly appending with <code>+=</code> inside a loop forces the engine to allocate a new buffer and copy all previous characters each time, degrading total time to O(n²). Collecting parts in an array and calling <code>.join('')</code> runs in linear O(n) time."
     }
   ],
 
-  howItWorksTogether: "Because strings are immutable, anything that looks like it's \"editing\" a string is really building a new one. That matters for performance: repeatedly concatenating onto a string inside a loop creates a new copy every single time, which can become slow for large inputs — collecting pieces and joining once at the end avoids that.",
+  howItWorksTogether: "Because strings are immutable primitives in JavaScript, attempting direct index assignment like <code>text[0] = 'M'</code> is silently ignored by the JavaScript engine in non-strict mode (or throws a TypeError in strict mode). To change or transform text, algorithms extract slices, replace tokens, or build arrays of characters, allocating a new string at completion. Knowing this memory model prevents costly O(n²) string construction loops in algorithmic challenges.",
 
-  visual: {
-    caption: "Figure 1: String immutability — every operation produces a new string object. The original is never modified.",
-    diagramSvg: `
-      <svg class="diagram-svg" viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg">
-        <rect width="700" height="230" fill="var(--bg-body)" rx="12" />
-        <text x="350" y="28" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">String Immutability: Every "Change" Creates a New String</text>
-        
-        <g transform="translate(40, 50)">
-          <rect width="280" height="70" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10"/>
-          <text x="140" y="24" fill="var(--text-muted)" font-size="11" text-anchor="middle">Original String (unchanged)</text>
-          <g transform="translate(15, 35)">
-            <rect x="0" y="0" width="35" height="28" fill="rgba(59,130,246,0.2)" stroke="#3B82F6" rx="4"/>
-            <text x="17" y="19" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">"h"</text>
-            <rect x="40" y="0" width="35" height="28" fill="rgba(59,130,246,0.2)" stroke="#3B82F6" rx="4"/>
-            <text x="57" y="19" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">"e"</text>
-            <rect x="80" y="0" width="35" height="28" fill="rgba(59,130,246,0.2)" stroke="#3B82F6" rx="4"/>
-            <text x="97" y="19" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">"l"</text>
-            <rect x="120" y="0" width="35" height="28" fill="rgba(59,130,246,0.2)" stroke="#3B82F6" rx="4"/>
-            <text x="137" y="19" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">"l"</text>
-            <rect x="160" y="0" width="35" height="28" fill="rgba(59,130,246,0.2)" stroke="#3B82F6" rx="4"/>
-            <text x="177" y="19" fill="var(--text-primary)" font-size="13" font-weight="bold" text-anchor="middle">"o"</text>
-          </g>
-          <text x="240" y="58" fill="var(--text-muted)" font-size="10">s</text>
-        </g>
-        
-        <g transform="translate(370, 58)">
-          <path d="M 0 30 L 50 30" stroke="var(--accent-primary)" stroke-width="2" marker-end="url(#arr-arrow)"/>
-          <text x="25" y="20" fill="var(--accent-primary)" font-size="10" text-anchor="middle">.toUpperCase()</text>
-        </g>
-        
-        <g transform="translate(440, 50)">
-          <rect width="220" height="70" fill="rgba(16,185,129,0.1)" stroke="#10B981" stroke-width="2" rx="10"/>
-          <text x="110" y="24" fill="#10B981" font-size="11" text-anchor="middle" font-weight="bold">NEW String Created</text>
-          <text x="110" y="55" fill="var(--text-primary)" font-size="16" font-weight="bold" text-anchor="middle">"HELLO"</text>
-        </g>
-        
-        <g transform="translate(40, 145)">
-          <rect width="620" height="65" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="1.5" rx="8"/>
-          <text x="20" y="22" fill="#EF4444" font-size="12" font-weight="bold">⚠ s[0] = "H" → silently does nothing</text>
-          <text x="20" y="42" fill="var(--text-secondary)" font-size="11">Strings are immutable. Index assignment is ignored. You must create a new string to change characters.</text>
-        </g>
-        
-        <defs>
-          <marker id="arr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-primary)"/>
-          </marker>
-        </defs>
-      </svg>
-    `
+  whyMatters: "Text parsing, pattern matching, URL manipulation, tokenization, serialization (JSON), and two-pointer palindrome validation all center around string mechanics. In technical interviews, string problems frequently test your ability to work around immutability efficiently.",
+
+  interactiveWidget: "string-visualizer",
+
+  workedExample: {
+    title: "String Operations & Immutability Trace",
+    primitiveText: "<code>const text = 'HELLO';<br/><br/>// 1. Character Access: text[1] → 'E' (O(1))<br/>// 2. Traversal: visit indices 0..4<br/>// 3. Search: text.indexOf('L') → 2 (O(n))<br/>// 4. Substring: text.slice(1, 4) → 'ELL' (O(k))<br/>// 5. Direct Mutation Attempt: text[0] = 'M'; // FAILS SILENTLY! text is still 'HELLO'<br/>// 6. Valid Replacement: 'J' + text.slice(1) → 'JELLO' (Allocates new string)</code>",
+    referenceText: "Strings cannot be modified in place. Any transformed string is a distinct memory allocation."
   },
 
-  codeSnippet: `<span class="cm">// String basics — access, immutability, concatenation</span>
-<span class="kw">const</span> s = <span class="str">"hello"</span>;
+  codeSnippet: `// String Operations in JavaScript
+const text = "HELLO";
 
-s[<span class="num">0</span>];             <span class="cm">// "h" — index access, like an array</span>
-s.<span class="fn">toUpperCase</span>();  <span class="cm">// "HELLO" — a NEW string, s itself is unchanged</span>
-s + <span class="str">" world"</span>;     <span class="cm">// "hello world" — concatenation creates a new string</span>
+// 1. Character Access — O(1)
+const char = text[1]; // "E"
 
-<span class="cm">// Inefficient at scale — each += copies the whole string so far:</span>
-<span class="kw">let</span> result = <span class="str">""</span>;
-<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; n; i++) result += <span class="str">"x"</span>;
+// 2. Traversal — O(n)
+for (let i = 0; i < text.length; i++) {
+  console.log(text[i]);
+}
 
-<span class="cm">// Better: collect in array, join once</span>
-<span class="kw">const</span> parts = [];
-<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; n; i++) parts.<span class="fn">push</span>(<span class="str">"x"</span>);
-<span class="kw">const</span> efficient = parts.<span class="fn">join</span>(<span class="str">""</span>);`,
+// 3. Search Character / Substring — O(n)
+const foundIndex = text.indexOf("L"); // 2
+
+// 4. Substring Extraction — O(k)
+const sub = text.slice(1, 4); // "ELL"
+
+// 5. Immutability Demonstration
+text[0] = "M"; // Silently does nothing! text remains "HELLO"
+
+// 6. Safe Replacement (produces NEW string) — O(n)
+const modified = "J" + text.slice(1); // "JELLO"
+
+// 7. Efficient Large String Construction — O(n) total
+const parts = [];
+for (let i = 0; i < 5; i++) parts.push("X");
+const result = parts.join(""); // "XXXXX"`,
 
   complexityNotes: [
-    "Character Access by Index: O(1) Constant Time.",
-    "String Concatenation (a + b): O(a.length + b.length) — creates a new string.",
-    "Repeated += in a Loop: Can degrade to O(n²) total due to repeated copying.",
-    "Array.join(): O(n) total — collects all pieces and concatenates once."
+    "Character Access by Index (s[i]): O(1) Constant Time.",
+    "String Length (s.length): O(1) Constant Time.",
+    "Search (indexOf / includes): O(n) Linear Time.",
+    "Substring / slice(start, end): O(k) Time and Space where k is slice length.",
+    "Concatenation (a + b): O(a.length + b.length) Time and Space.",
+    "Repeated += in Loop: Can degrade to O(n²) Quadratic Time.",
+    "Array.join(''): O(n) Linear Time."
   ],
 
   commonMistakes: [
     {
-      title: "Mistake 1: Trying s[0] = \"H\" expecting it to mutate",
-      desc: "String index assignment silently does nothing in JavaScript. Strings are immutable — you must create a new string instead."
+      title: "Mistake 1: Trying to Mutate a Character with Index Assignment",
+      desc: "Writing <code>str[0] = 'A'</code> does NOT throw an error in standard JavaScript, but it silently fails and leaves the string unchanged. You must use <code>slice()</code>, <code>replace()</code>, or convert to an array using <code>str.split('')</code>."
     },
     {
-      title: "Mistake 2: Building large strings with repeated += in a loop",
-      desc: "Each <code>+=</code> creates a brand-new string copy. For large inputs, collect pieces in an array and <code>.join()</code> once at the end for O(n) performance instead of O(n²)."
+      title: "Mistake 2: Building Long Strings with += in a Loop",
+      desc: "Each <code>+=</code> copies the entire accumulated string into a new memory location. For 100,000 operations, this produces millions of intermediate character copies. Always push parts into an array and call <code>.join('')</code> at the end."
+    },
+    {
+      title: "Mistake 3: Confusing slice() with substr() / substring()",
+      desc: "<code>slice(start, end)</code> takes end index exclusive, supports negative indices (counting backward from end), and is standard modern JavaScript. Avoid deprecated legacy methods like <code>substr()</code>."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What happens in JavaScript when executing: const s = 'cat'; s[0] = 'b'; console.log(s);?",
+      options: [
+        "A. Outputs 'bat'",
+        "B. Outputs 'cat' because strings are immutable",
+        "C. Throws a ReferenceError",
+        "D. Outputs 'undefined'"
+      ],
+      answer: "B",
+      explanation: "JavaScript strings are primitive and immutable. Index assignment is silently ignored in non-strict mode, leaving 's' as 'cat'."
+    },
+    {
+      question: "Q2. Why is using array.join('') preferred over str += in a large loop?",
+      a: "Because strings are immutable, each += creates a new string buffer and copies all previous characters, degrading to O(n²). Array.join('') allocates memory once and copies characters in O(n) linear time.",
+      options: [
+        "A. Array.join('') is O(n) while repeated += degrades to O(n²)",
+        "B. Arrays take less memory than strings",
+        "C. += cannot handle non-ASCII characters",
+        "D. Array.join() runs on multiple CPU cores"
+      ],
+      answer: "A",
+      explanation: "Repeated concatenation requires copying all characters accumulated so far on every iteration, leading to 1 + 2 + 3 + ... + n = O(n²) operations. Array.join allocates the final buffer once."
     }
   ],
 
   practice: [
     {
-      q: "Question 1: Why doesn't `s[0] = \"X\"` change `s`?",
-      a: "Strings are immutable in JavaScript. Index assignment is silently ignored — it doesn't throw an error, but it doesn't modify the string either. Any 'change' must create a new string."
+      q: "How can you reverse a string in JavaScript since strings do not have a .reverse() method?",
+      a: "Convert the string to an array of characters, reverse the array in-place, and join it back: `str.split('').reverse().join('')`. Alternatively, use a two-pointer loop or build a reversed array manually."
     },
     {
-      q: "Question 2: What's a more efficient way to build a large string than repeated `+=`?",
-      a: "Collect pieces in an array using `push()`, then call `.join(\"\")` once at the end. This avoids creating intermediate string copies on every iteration."
+      q: "What is the time complexity of checking if a string of length n is a palindrome using two pointers?",
+      a: "O(n) time and O(1) extra space. Start one pointer at index 0 and another at index n - 1. Compare characters moving inward until the pointers meet."
     }
   ],
 
   challenge: {
-    titleText: "Challenge: Palindrome Check Without Reverse",
-    desc: "Write a palindrome check without using a built-in reverse method. Compare characters from both ends moving inward. For example, <code>\"racecar\"</code> is a palindrome, <code>\"hello\"</code> is not."
+    titleText: "Challenge: Valid Palindrome (Ignoring Non-Alphanumeric)",
+    desc: "A phrase is a palindrome if, after converting all uppercase letters to lowercase and removing all non-alphanumeric characters, it reads the same forward and backward. Implement this using two pointers with O(1) auxiliary space!"
   },
 
   leetcodePractice: {
     showProcessCallout: true,
-    suggestedStartingNote: "Start with 125 — Valid Palindrome as your introduction to two-pointers.",
+    suggestedStartingNote: "Start with 125 — Valid Palindrome. Practice two-pointer inward scanning before attempting hash map string problems like Valid Anagram.",
     problems: [
       { num: 125, title: "Valid Palindrome", concept: "Two Pointers", slug: "valid-palindrome", isSuggestedStart: true, roadmapStep: 5, isImmediateNext: true },
-      { num: 242, title: "Valid Anagram", concept: "String + Hash Map", slug: "valid-anagram", roadmapStep: 6 },
-      { num: 20, title: "Valid Parentheses", concept: "Stack", slug: "valid-parentheses", roadmapStep: 7 },
-      { num: 387, title: "First Unique Character in a String", concept: "Hash Map", slug: "first-unique-character-in-a-string" },
-      { num: 14, title: "Longest Common Prefix", concept: "String", slug: "longest-common-prefix" }
+      { num: 242, title: "Valid Anagram", concept: "String + Frequency Map", slug: "valid-anagram", roadmapStep: 6 },
+      { num: 20, title: "Valid Parentheses", concept: "String + Stack", slug: "valid-parentheses", roadmapStep: 7 },
+      { num: 387, title: "First Unique Character in a String", concept: "Frequency Map", slug: "first-unique-character-in-a-string" },
+      { num: 14, title: "Longest Common Prefix", concept: "Horizontal / Vertical Scanning", slug: "longest-common-prefix" }
     ]
   }
 };

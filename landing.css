@@ -38,6 +38,15 @@
   box-sizing: border-box;
 }
 
+iconify-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 html {
   scroll-behavior: smooth;
   font-size: 16px;

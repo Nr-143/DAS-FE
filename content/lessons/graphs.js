@@ -5,104 +5,304 @@
 
 window.LESSONS_CONTENT = window.LESSONS_CONTENT || {};
 
-// Graph Representation
+// ==========================================
+// 1. GRAPH REPRESENTATION (UNLOCKED)
+// ==========================================
 window.LESSONS_CONTENT["graph-representation"] = {
   id: "graph-representation",
   title: "Graph Representation",
   levelTitle: "Level 6 — Graphs",
-  summary: "Learn how networks of vertices and edges are modeled using Adjacency Lists and Adjacency Matrices.",
+  summary: "Master vertices, edges, directed vs undirected graphs, weighted networks, and compare Adjacency List O(V + E) vs Adjacency Matrix O(V²) memory layouts.",
 
   definitions: [
-    { term: "Graph", def: "A collection of nodes (vertices) connected by links (edges)." },
-    { term: "Adjacency List", def: "A hash map or array of lists where each vertex maps to a list of its neighboring vertices." },
-    { term: "Adjacency Matrix", def: "A 2D V×V matrix where entry matrix[i][j] is 1 if an edge exists between vertex i and j." }
+    {
+      term: "Graph",
+      def: "A non-linear data structure consisting of a finite set of vertices (or nodes) connected by links called edges."
+    },
+    {
+      term: "Directed vs. Undirected",
+      def: "In an <strong>undirected graph</strong>, edges are two-way bidirectional highways (if A connects to B, B connects to A). In a <strong>directed graph (digraph)</strong>, edges have an arrow direction (A → B does not imply B → A)."
+    },
+    {
+      term: "Weighted vs. Unweighted",
+      def: "In a <strong>weighted graph</strong>, each edge carries a numerical cost or distance (e.g. mileage on Google Maps, latency in networks). In an unweighted graph, all edge traversals cost 1."
+    },
+    {
+      term: "Adjacency List",
+      def: "A collection of lists or hash map where each vertex maps to an array of its immediate neighbors. Uses optimal <code>O(V + E)</code> memory for sparse graphs."
+    },
+    {
+      term: "Adjacency Matrix",
+      def: "A 2D <code>V × V</code> boolean/number table where cell <code>matrix[i][j] = 1</code> indicates an edge exists from vertex i to vertex j. Allows O(1) edge existence queries at the cost of <code>O(V²)</code> memory."
+    }
   ],
 
-  howItWorksTogether: "Adjacency lists use less memory O(V + E) for sparse graphs, while matrices allow O(1) edge lookup.",
-  whyMatters: "Powers social networks, Google Maps routing, recommendation systems, and network topology.",
+  howItWorksTogether: "In software engineering, almost all real-world graphs (social networks, web pages, road maps) are sparse: each vertex connects to only a tiny fraction of the total vertices. Using an Adjacency Matrix for Facebook (3 billion users) would require 9 quintillion cells (O(V²)), running out of memory instantly. An Adjacency List stores only the actual existing edges, keeping storage proportional to <code>O(V + E)</code> while making neighbor traversal fast and direct.",
+
+  whyMatters: "Graphs model social networks, Google Maps GPS navigation, internet routing, recommendation engines, dependency resolution in package managers (npm), and circuit design.",
+
+  interactiveWidget: "graph-visualizer",
 
   workedExample: {
-    title: "Adjacency List Representation",
-    primitiveText: "<code>const graph = {<br/>  A: [\"B\", \"C\"],<br/>  B: [\"A\", \"D\"],<br/>  C: [\"A\"],<br/>  D: [\"B\"]<br/>};</code>"
+    title: "Adjacency List vs Matrix for Vertices A, B, C, D, E",
+    primitiveText: "<code>// Adjacency List: Map of Arrays<br/>const graph = {<br/>  A: ['B', 'C'],<br/>  B: ['A', 'D', 'E'],<br/>  C: ['A', 'E'],<br/>  D: ['B', 'E'],<br/>  E: ['C', 'B', 'D']<br/>};<br/><br/>// Adjacency Matrix: 5x5 Grid<br/>// matrix[0][1] = 1 (A connects to B)</code>",
+    referenceText: "Notice how the list only stores connections that actually exist!"
   },
 
   codeSnippet: `class Graph {
-  constructor() { this.adjacencyList = {}; }
-  addVertex(v) { if (!this.adjacencyList[v]) this.adjacencyList[v] = []; }
+  constructor() {
+    this.adjacencyList = {};
+  }
+
+  // 1. ADD VERTEX — O(1)
+  addVertex(v) {
+    if (!this.adjacencyList[v]) this.adjacencyList[v] = [];
+  }
+
+  // 2. ADD UNDIRECTED EDGE — O(1)
   addEdge(v1, v2) {
-    this.addVertex(v1); this.addVertex(v2);
+    this.addVertex(v1);
+    this.addVertex(v2);
     this.adjacencyList[v1].push(v2);
     this.adjacencyList[v2].push(v1);
   }
+
+  // 3. REMOVE EDGE — O(E)
+  removeEdge(v1, v2) {
+    if (this.adjacencyList[v1]) {
+      this.adjacencyList[v1] = this.adjacencyList[v1].filter(v => v !== v2);
+    }
+    if (this.adjacencyList[v2]) {
+      this.adjacencyList[v2] = this.adjacencyList[v2].filter(v => v !== v1);
+    }
+  }
 }`,
 
-  complexityNotes: ["Space: Adjacency List O(V + E); Adjacency Matrix O(V²)."],
-  commonMistakes: [{ title: "Mistake 1: Matrix space", desc: "Using a V×V matrix for a graph with 1,000,000 vertices requires 1 trillion entries!" }],
-  miniQuiz: [{ question: "Q1. What is the space complexity of an Adjacency List?", options: ["A. O(V + E)", "B. O(V²)", "C. O(E²)", "D. O(V)"], answer: "A", explanation: "Adjacency list stores V vertices and E edge pointers." }],
-  practice: [{ q: "When is an Adjacency Matrix preferred over an Adjacency List?", a: "When the graph is dense (E ≈ V²) or when frequent O(1) edge existence checks are required." }]
+  complexityNotes: [
+    "Adjacency List Space: O(V + E) — highly efficient for sparse graphs.",
+    "Adjacency Matrix Space: O(V²) — excessive memory for sparse networks.",
+    "Add Vertex: O(1) in Adjacency List; O(V²) in Matrix (resizing 2D array).",
+    "Add Edge: O(1) in both representations.",
+    "Check if Edge Exists: O(1) in Matrix; O(degree(v)) in Adjacency List."
+  ],
+
+  commonMistakes: [
+    {
+      title: "Mistake 1: Choosing a Matrix for Large Sparse Networks",
+      desc: "For a graph with 1,000,000 vertices, an adjacency matrix allocates 1,000,000,000,000 cells (1 Terabyte of RAM!), crashing the browser or server instantly. Always use an Adjacency List unless density <code>E ≈ V²</code>."
+    },
+    {
+      title: "Mistake 2: Forgetting to Add Symmetrical Link in Undirected Graphs",
+      desc: "In an undirected graph, <code>addEdge(A, B)</code> must push B into A's list AND A into B's list. Omitting one creates an accidental directed one-way link."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What is the space complexity of an Adjacency List with V vertices and E edges?",
+      options: [
+        "A. O(V + E)",
+        "B. O(V²)",
+        "C. O(E²)",
+        "D. O(1)"
+      ],
+      answer: "A",
+      explanation: "An adjacency list stores V array entries and E edge connections, taking optimal O(V + E) space."
+    },
+    {
+      question: "Q2. When is an Adjacency Matrix preferred over an Adjacency List?",
+      options: [
+        "A. When the graph is sparse",
+        "B. When the graph is dense (E ≈ V²) and frequent O(1) edge lookup is required",
+        "C. When memory is limited",
+        "D. When running BFS"
+      ],
+      answer: "B",
+      explanation: "In dense graphs where almost every pair of vertices shares an edge, a matrix has no wasted cells and provides instantaneous O(1) edge checks."
+    }
+  ],
+
+  practice: [
+    {
+      q: "What is the degree of a vertex in an undirected graph?",
+      a: "The degree of a vertex is the number of edges incident to it (i.e., the number of immediate neighbors in its adjacency list)."
+    }
+  ],
+
+  challenge: {
+    titleText: "Challenge: Find the Center of a Star Graph",
+    desc: "Given an undirected star graph with n vertices labeled from 1 to n, find the center vertex that connects to every other vertex in O(1) time!"
+  },
+
+  leetcodePractice: {
+    showProcessCallout: true,
+    suggestedStartingNote: "Start with 1791 — Find Center of Star Graph, then move to graph traversals.",
+    problems: [
+      { num: 1791, title: "Find Center of Star Graph", concept: "Edge Frequency Check", slug: "find-center-of-star-graph", isSuggestedStart: true, isImmediateNext: true },
+      { num: 997, title: "Find the Town Judge", concept: "In-Degree & Out-Degree", slug: "find-the-town-judge" }
+    ]
+  }
 };
 
-// Breadth-First Search (BFS)
+// ==========================================
+// 2. BREADTH-FIRST SEARCH (BFS) (UNLOCKED)
+// ==========================================
 window.LESSONS_CONTENT["breadth-first-search"] = {
   id: "breadth-first-search",
   title: "Breadth-First Search (BFS)",
   levelTitle: "Level 6 — Graphs",
-  summary: "Traverse graphs level by level using a Queue to find the shortest path in unweighted graphs.",
+  summary: "Traverse graphs layer-by-layer using a FIFO Queue and a Visited Set to discover the guaranteed shortest path in unweighted networks.",
 
   definitions: [
-    { term: "BFS", def: "Traversing nodes layer-by-layer starting from a source node using a Queue." },
-    { term: "Shortest Path Guarantee", def: "In unweighted graphs, BFS is guaranteed to find the path with the fewest edges." }
+    {
+      term: "Breadth-First Search (BFS)",
+      def: "A graph traversal algorithm that explores all neighbor vertices at the current depth distance before moving on to vertices at the next depth level."
+    },
+    {
+      term: "Queue in BFS",
+      def: "BFS uses a FIFO (First In, First Out) Queue to maintain the frontier of discovered vertices, guaranteeing that vertices closer to the source are visited first."
+    },
+    {
+      term: "Visited Set",
+      def: "A hash set tracking nodes that have already been discovered or enqueued, preventing duplicate processing and infinite loops in cyclic graphs."
+    },
+    {
+      term: "Shortest Path Guarantee",
+      def: "In any unweighted graph, BFS is mathematically guaranteed to find the shortest path (minimum number of edges) from the source to any reachable vertex."
+    }
   ],
 
-  howItWorksTogether: "Uses a FIFO Queue and a Visited set to explore all neighbors at depth d before moving to depth d+1.",
-  whyMatters: "Used in social connection distance ('degrees of separation'), web crawlers, and shortest path in unweighted grids.",
+  howItWorksTogether: "BFS starts at a source vertex, enqueues it, and adds it to the Visited set. In a loop, it dequeues the front vertex, examines all its immediate neighbors, and for each unvisited neighbor, marks it as visited and enqueues it. Because FIFO ordering processes all distance-1 nodes before distance-2 nodes, the first time target T is popped, the path taken is guaranteed to be the shortest possible.",
+
+  whyMatters: "BFS powers Google Maps routing in unweighted grids, LinkedIn's 'degrees of connection' distance calculations, web crawlers indexing the web by link depth, and solving shortest-move puzzles (Word Ladder, Knight's minimum moves).",
+
+  interactiveWidget: "graph-bfs-visualizer",
 
   workedExample: {
-    title: "BFS Implementation",
-    primitiveText: "<code>function bfs(graph, start) {<br/>  const queue = [start];<br/>  const visited = new Set([start]);<br/>  while (queue.length) {<br/>    const curr = queue.shift();<br/>    for (const neighbor of graph[curr]) {<br/>      if (!visited.has(neighbor)) {<br/>        visited.add(neighbor);<br/>        queue.push(neighbor);<br/>      }<br/>    }<br/>  }<br/>}</code>"
+    title: "BFS Execution Trace with Queue & Visited Set",
+    primitiveText: "<code>Graph: A - B, A - C, B - D, C - E<br/>Start at A:<br/>1. Enqueue A, Visited: {A}<br/>2. Dequeue A, Enqueue neighbors B, C → Queue: [B, C], Visited: {A, B, C}<br/>3. Dequeue B, Enqueue D → Queue: [C, D], Visited: {A, B, C, D}<br/>4. Dequeue C, Enqueue E → Queue: [D, E], Visited: {A, B, C, D, E}<br/>5. Dequeue D, E → Done!</code>",
+    referenceText: "Notice how distance 1 nodes (B, C) were fully processed before distance 2 nodes (D, E)!"
   },
 
   codeSnippet: `function bfsShortestPath(graph, start, target) {
-  const queue = [[start, 0]];
+  const queue = [[start, 0]]; // [currentNode, distance]
   const visited = new Set([start]);
 
   while (queue.length > 0) {
-    const [node, dist] = queue.shift();
-    if (node === target) return dist;
+    const [curr, dist] = queue.shift(); // Dequeue
+    if (curr === target) return dist;   // Shortest path found!
 
-    for (const neighbor of (graph[node] || [])) {
+    for (const neighbor of (graph[curr] || [])) {
       if (!visited.has(neighbor)) {
-        visited.add(neighbor);
+        visited.add(neighbor); // Mark visited immediately!
         queue.push([neighbor, dist + 1]);
       }
     }
   }
-  return -1;
+  return -1; // Unreachable
 }`,
 
-  complexityNotes: ["Time: O(V + E).", "Space: O(V) for Queue and Visited set."],
-  commonMistakes: [{ title: "Mistake 1: Forgetting Visited set", desc: "Causes infinite loops on cyclic graphs." }],
-  miniQuiz: [{ question: "Q1. What data structure does BFS use?", options: ["A. Stack", "B. Queue", "C. Heap", "D. Array"], answer: "B", explanation: "BFS uses a Queue (FIFO) to explore nodes level-by-level." }],
-  practice: [{ q: "Why is BFS guaranteed to find the shortest path in an unweighted graph?", a: "Because it explores all nodes at distance d before any node at distance d+1." }]
+  complexityNotes: [
+    "Time Complexity: O(V + E) — every vertex is enqueued once, every edge examined twice.",
+    "Space Complexity: O(V) — for the Queue and the Visited Set."
+  ],
+
+  commonMistakes: [
+    {
+      title: "Mistake 1: Forgetting to Add to Visited Set Upon Enqueue",
+      desc: "If you only mark a node as visited when it is <em>dequeued</em>, multiple paths can enqueue the same node dozens of times, causing an exponential explosion in queue size and severe performance degradation."
+    },
+    {
+      title: "Mistake 2: Missing Visited Set on Cyclic Graphs",
+      desc: "Without a visited set, cycles (A → B → A) cause the queue to cycle forever, hanging the application in an infinite loop."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What data structure is fundamentally required by Breadth-First Search?",
+      options: [
+        "A. Stack",
+        "B. FIFO Queue",
+        "C. Min-Heap",
+        "D. Binary Search Tree"
+      ],
+      answer: "B",
+      explanation: "BFS relies on a FIFO Queue to ensure vertices are visited level-by-level in order of their edge distance from the source."
+    },
+    {
+      question: "Q2. When does BFS guarantee finding the shortest path?",
+      options: [
+        "A. On any weighted graph",
+        "B. On unweighted graphs where all edge weights are equal",
+        "C. Only on binary trees",
+        "D. Only on directed acyclic graphs"
+      ],
+      answer: "B",
+      explanation: "BFS guarantees the shortest path when all edges have uniform (equal) weight, as it explores all paths of length k before any path of length k + 1."
+    }
+  ],
+
+  practice: [
+    {
+      q: "Why is BFS preferred over DFS for finding the shortest path in an unweighted maze?",
+      a: "DFS can explore deep down dead ends that lead away from the target before backtracking. BFS expands equally in all directions and stops the instant the destination is reached, guaranteeing the minimum step count."
+    }
+  ],
+
+  challenge: {
+    titleText: "Challenge: Shortest Path in Binary Matrix (LeetCode 1091)",
+    desc: "Given an n x n binary grid, return the length of the shortest clear path from top-left (0, 0) to bottom-right (n-1, n-1) using 8-directional BFS movement!"
+  },
+
+  leetcodePractice: {
+    showProcessCallout: true,
+    suggestedStartingNote: "Start with 1091 — Shortest Path in Binary Matrix and 200 — Number of Islands (BFS approach).",
+    problems: [
+      { num: 1091, title: "Shortest Path in Binary Matrix", concept: "8-Directional Grid BFS", slug: "shortest-path-in-binary-matrix", isSuggestedStart: true, isImmediateNext: true },
+      { num: 200, title: "Number of Islands", concept: "Connected Component Floodfill", slug: "number-of-islands", isImmediateNext: true }
+    ]
+  }
 };
 
-// Depth-First Search (DFS)
+// ==========================================
+// 3. DEPTH-FIRST SEARCH (DFS) (UNLOCKED)
+// ==========================================
 window.LESSONS_CONTENT["depth-first-search"] = {
   id: "depth-first-search",
   title: "Depth-First Search (DFS)",
   levelTitle: "Level 6 — Graphs",
-  summary: "Explore as far as possible along each branch using Recursion or a Stack before backtracking.",
+  summary: "Explore branches deeply along each path using Recursion or an explicit Stack, backtrack on dead ends, and detect cycles.",
 
   definitions: [
-    { term: "DFS", def: "Traversing deeply along a branch until reaching a dead end, then backtracking." }
+    {
+      term: "Depth-First Search (DFS)",
+      def: "A graph traversal algorithm that plunges as deep as possible along each branch before backtracking to explore alternate branches."
+    },
+    {
+      term: "Call Stack / Recursion",
+      def: "DFS inherently uses a LIFO Stack — either via the system's recursive execution call stack or an explicit stack data structure."
+    },
+    {
+      term: "Backtracking",
+      def: "The process of retreating up the call stack to the previous vertex once a dead end or fully visited neighbor list is reached."
+    },
+    {
+      term: "Cycle Detection",
+      def: "DFS can detect cycles in directed graphs by tracking vertices in the current recursion stack (back-edges)."
+    }
   ],
 
-  howItWorksTogether: "Uses recursion (Call Stack) or an explicit Stack. Ideal for cycle detection, maze solving, and component counting.",
-  whyMatters: "Core mechanism for connected components, topological sorting, and solving puzzles.",
+  howItWorksTogether: "DFS begins at a source vertex, marks it as visited, and immediately recurses on its first unvisited neighbor. It continues plunging deeper until reaching a vertex with no unvisited neighbors (a dead end). At that point, the recursive function returns, backtracking to the previous vertex to explore its next remaining neighbor.",
+
+  whyMatters: "DFS is the mechanism behind counting connected components (Number of Islands), solving mazes, topological sorting in build systems, finding bridges and articulation points in networks, and cycle detection.",
+
+  interactiveWidget: "graph-dfs-visualizer",
 
   workedExample: {
-    title: "Recursive DFS",
-    primitiveText: "<code>function dfs(node, graph, visited = new Set()) {<br/>  if (visited.has(node)) return;<br/>  visited.add(node);<br/>  for (const neighbor of graph[node]) {<br/>    dfs(neighbor, graph, visited);<br/>  }<br/>}</code>"
+    title: "Recursive DFS Deep Plunge Trace",
+    primitiveText: "<code>Path A - B - D - E - C:<br/>1. dfs(A) → branch to B<br/>2. dfs(B) → branch to D<br/>3. dfs(D) → branch to E<br/>4. dfs(E) → branch to C<br/>5. C has no unvisited neighbors → Backtrack to E → D → B → A!</code>",
+    referenceText: "Notice how DFS went 4 levels deep before backtracking!"
   },
 
   codeSnippet: `function numIslands(grid) {
@@ -111,170 +311,113 @@ window.LESSONS_CONTENT["depth-first-search"] = {
   const rows = grid.length, cols = grid[0].length;
 
   function dfs(r, c) {
+    // Boundary check + water check
     if (r < 0 || r >= rows || c < 0 || c >= cols || grid[r][c] === '0') return;
-    grid[r][c] = '0'; // mark visited
-    dfs(r+1, c); dfs(r-1, c); dfs(r, c+1); dfs(r, c-1);
+    grid[r][c] = '0'; // Sink island / mark visited in-place!
+    dfs(r + 1, c); // Down
+    dfs(r - 1, c); // Up
+    dfs(r, c + 1); // Right
+    dfs(r, c - 1); // Left
   }
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (grid[r][c] === '1') { count++; dfs(r, c); }
+      if (grid[r][c] === '1') {
+        count++;
+        dfs(r, c); // Explore entire connected island
+      }
     }
   }
   return count;
 }`,
 
-  complexityNotes: ["Time: O(V + E).", "Space: O(V) for call stack."],
-  commonMistakes: [{ title: "Mistake 1: Stack Overflow", desc: "On very deep graphs, recursion can exceed max call stack size." }],
-  miniQuiz: [{ question: "Q1. What data structure does DFS inherently use?", options: ["A. Queue", "B. Stack / Recursion", "C. Min Heap", "D. Set"], answer: "B", explanation: "DFS uses a Stack (or the call stack via recursion)." }],
-  practice: [{ q: "How can DFS detect a cycle in a directed graph?", a: "By tracking nodes currently in the recursion stack (back-edges)." }]
+  complexityNotes: [
+    "Time Complexity: O(V + E) — visits every vertex and examines every edge.",
+    "Space Complexity: O(V) — for the recursive call stack depth in the worst case (linear path)."
+  ],
+
+  commonMistakes: [
+    {
+      title: "Mistake 1: Stack Overflow on Deep Graphs",
+      desc: "In very deep graphs (or large 1000x1000 grids), recursion can exceed the browser's maximum call stack limit (~10,000 frames). For huge graphs, use an explicit iterative stack."
+    },
+    {
+      title: "Mistake 2: Missing Boundary Checks in Grid DFS",
+      desc: "Always check <code>r < 0 || r >= rows || c < 0 || c >= cols</code> BEFORE accessing <code>grid[r][c]</code> to avoid out-of-bounds errors."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What data structure does Depth-First Search inherently utilize?",
+      options: [
+        "A. FIFO Queue",
+        "B. LIFO Stack (or Call Stack)",
+        "C. Min-Heap",
+        "D. Hash Set"
+      ],
+      answer: "B",
+      explanation: "DFS operates via LIFO Stack order (either recursively on the runtime call stack or iteratively)."
+    },
+    {
+      question: "Q2. How can DFS detect a cycle in a directed graph?",
+      options: [
+        "A. By checking if the queue size exceeds V",
+        "B. By detecting a back-edge to a node currently active in the recursion call stack",
+        "C. By checking if total edges > vertices",
+        "D. By running binary search"
+      ],
+      answer: "B",
+      explanation: "If DFS encounters a neighbor that is already in the current ancestor recursion stack, a cycle exists."
+    }
+  ],
+
+  practice: [
+    {
+      q: "What is the difference between BFS and DFS traversal shapes?",
+      a: "BFS expands in concentric circular ripples (level by level), finding shortest paths. DFS plunges straight down a single path like a winding thread until it hits a wall, then backtracks."
+    }
+  ],
+
+  challenge: {
+    titleText: "Challenge: Number of Islands (LeetCode 200)",
+    desc: "Given an m x n 2D binary grid which represents a map of '1's (land) and '0's (water), return the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically."
+  },
+
+  leetcodePractice: {
+    showProcessCallout: true,
+    suggestedStartingNote: "Start with 200 — Number of Islands, followed by 695 — Max Area of Island.",
+    problems: [
+      { num: 200, title: "Number of Islands", concept: "Grid Floodfill DFS", slug: "number-of-islands", isSuggestedStart: true, isImmediateNext: true },
+      { num: 695, title: "Max Area of Island", concept: "Component Area DFS", slug: "max-area-of-island", isImmediateNext: true },
+      { num: 733, title: "Flood Fill", concept: "Pixel Replacement DFS", slug: "flood-fill" }
+    ]
+  }
 };
 
-// Topological Sort
+// ==========================================
+// 4. TOPOLOGICAL SORT, UNION-FIND, SHORTEST PATH (PRESERVED - LOCKED)
+// ==========================================
 window.LESSONS_CONTENT["topological-sort"] = {
   id: "topological-sort",
   title: "Topological Sort",
   levelTitle: "Level 6 — Graphs",
   summary: "Order vertices in a Directed Acyclic Graph (DAG) such that for every edge u -> v, u comes before v.",
-
-  definitions: [
-    { term: "DAG", def: "Directed Acyclic Graph (a directed graph with no cycles)." },
-    { term: "Topological Order", def: "A linear ordering of vertices respecting dependency directions." }
-  ],
-
-  howItWorksTogether: "Kahn's Algorithm (BFS with in-degrees) or DFS with post-order stack ordering.",
-  whyMatters: "Used for build systems (e.g. npm dependency resolution), course prerequisite ordering, and task scheduling.",
-
-  workedExample: {
-    title: "Kahn's Algorithm (BFS In-Degree)",
-    primitiveText: "<code>1. Calculate in-degree of all nodes.<br/>2. Push nodes with 0 in-degree to queue.<br/>3. Process queue, decrementing in-degrees of neighbors.</code>"
-  },
-
-  codeSnippet: `function findOrder(numCourses, prerequisites) {
-  const inDegree = new Array(numCourses).fill(0);
-  const graph = Array.from({ length: numCourses }, () => []);
-
-  for (const [dest, src] of prerequisites) {
-    graph[src].push(dest);
-    inDegree[dest]++;
-  }
-
-  const queue = [];
-  for (let i = 0; i < numCourses; i++) {
-    if (inDegree[i] === 0) queue.push(i);
-  }
-
-  const order = [];
-  while (queue.length) {
-    const curr = queue.shift();
-    order.push(curr);
-    for (const next of graph[curr]) {
-      inDegree[next]--;
-      if (inDegree[next] === 0) queue.push(next);
-    }
-  }
-
-  return order.length === numCourses ? order : [];
-}`,
-
-  complexityNotes: ["Time: O(V + E).", "Space: O(V + E)."],
-  commonMistakes: [{ title: "Mistake 1: Graph has cycles", desc: "Topological sort is impossible if the graph has a cycle. Output order length will be < V." }],
-  miniQuiz: [{ question: "Q1. What type of graph is required for Topological Sort?", options: ["A. Undirected", "B. DAG (Directed Acyclic Graph)", "C. Binary Tree", "D. Complete Graph"], answer: "B", explanation: "Topological sort requires a Directed Acyclic Graph." }],
-  practice: [{ q: "How can Kahn's algorithm detect if a graph contains a cycle?", a: "If the final topological order array contains fewer than V nodes, a cycle exists." }]
+  definitions: [{ term: "DAG", def: "Directed Acyclic Graph." }]
 };
 
-// Union-Find (Disjoint Set)
 window.LESSONS_CONTENT["union-find"] = {
   id: "union-find",
   title: "Union-Find (Disjoint Set)",
   levelTitle: "Level 6 — Graphs",
   summary: "Master Disjoint Set Union (DSU) with Path Compression and Rank for near O(1) set operations.",
-
-  definitions: [
-    { term: "Union-Find", def: "A data structure supporting find(x) and union(x, y) operations over disjoint sets." },
-    { term: "Path Compression", def: "Flattening the tree structure during find() calls so nodes point directly to the root." }
-  ],
-
-  howItWorksTogether: "With Path Compression and Union by Rank, operations run in nearly O(1) amortized time (inverse Ackermann function α(n)).",
-  whyMatters: "Essential for Kruskal's Minimum Spanning Tree algorithm and dynamic connectivity problems.",
-
-  workedExample: {
-    title: "DSU Class",
-    primitiveText: "<code>const dsu = new DSU(5);<br/>dsu.union(0, 1);<br/>dsu.union(1, 2);<br/>dsu.find(0) === dsu.find(2); // true</code>"
-  },
-
-  codeSnippet: `class DSU {
-  constructor(n) {
-    this.parent = Array.from({ length: n }, (_, i) => i);
-    this.rank = new Array(n).fill(0);
-  }
-
-  find(i) {
-    if (this.parent[i] === i) return i;
-    return this.parent[i] = this.find(this.parent[i]); // Path compression
-  }
-
-  union(i, j) {
-    const rootI = this.find(i);
-    const rootJ = this.find(j);
-    if (rootI !== rootJ) {
-      if (this.rank[rootI] < this.rank[rootJ]) this.parent[rootI] = rootJ;
-      else if (this.rank[rootI] > this.rank[rootJ]) this.parent[rootJ] = rootI;
-      else { this.parent[rootJ] = rootI; this.rank[rootI]++; }
-      return true;
-    }
-    return false; // Already connected
-  }
-}`,
-
-  complexityNotes: ["Time: O(α(n)) ≈ O(1) per operation.", "Space: O(n)."],
-  commonMistakes: [{ title: "Mistake 1: Skipping path compression", desc: "Without path compression, find() can degrade to O(n)." }],
-  miniQuiz: [{ question: "Q1. What is the time complexity of Union-Find with Path Compression?", options: ["A. O(1) amortized", "B. O(log n)", "C. O(n)", "D. O(n²)"], answer: "A", explanation: "Path compression reduces operations to near-constant amortized time." }],
-  practice: [{ q: "How do you detect a cycle in an undirected graph using Union-Find?", a: "For each edge (u, v), if find(u) === find(v), adding the edge creates a cycle." }]
+  definitions: [{ term: "Union-Find", def: "A data structure supporting find and union operations over disjoint sets." }]
 };
 
-// Shortest Path (Dijkstra's)
 window.LESSONS_CONTENT["shortest-path"] = {
   id: "shortest-path",
   title: "Shortest Path (Dijkstra's)",
   levelTitle: "Level 6 — Graphs",
-  summary: "Find the shortest paths from a source node to all other nodes in a weighted graph using Dijkstra's Algorithm.",
-
-  definitions: [
-    { term: "Dijkstra's Algorithm", def: "A greedy graph algorithm for finding shortest paths in non-negative weighted graphs." }
-  ],
-
-  howItWorksTogether: "Maintains a distance table and uses a Priority Queue (Min-Heap) to pick the closest unvisited node.",
-  whyMatters: "Powers GPS navigation, network packet routing, and game pathfinding.",
-
-  workedExample: {
-    title: "Dijkstra Overview",
-    primitiveText: "<code>1. Set dist[src] = 0, all others = ∞.<br/>2. Extract node u with min dist from Min-Heap.<br/>3. Relax all neighbors v: dist[v] = min(dist[v], dist[u] + weight).</code>"
-  },
-
-  codeSnippet: `function dijkstra(graph, src, n) {
-  const dist = new Array(n).fill(Infinity);
-  dist[src] = 0;
-  const pq = [[0, src]]; // [dist, node]
-
-  while (pq.length) {
-    pq.sort((a, b) => a[0] - b[0]); // Min-heap behavior
-    const [d, u] = pq.shift();
-
-    if (d > dist[u]) continue;
-
-    for (const [v, w] of (graph[u] || [])) {
-      if (dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        pq.push([dist[v], v]);
-      }
-    }
-  }
-  return dist;
-}`,
-
-  complexityNotes: ["Time: O((V + E) log V) with Min-Heap.", "Space: O(V + E)."],
-  commonMistakes: [{ title: "Mistake 1: Negative weight edges", desc: "Dijkstra's algorithm fails on graphs with negative edge weights! Use Bellman-Ford instead." }],
-  miniQuiz: [{ question: "Q1. Why does Dijkstra's algorithm fail with negative edge weights?", options: ["A. Greedy choice assumption fails", "B. Out of memory", "C. Stack overflow", "D. Array index out of bounds"], answer: "A", explanation: "Dijkstra assumes visited nodes have finalized minimum distances, which is broken by negative weights." }],
-  practice: [{ q: "What algorithm should be used if edge weights are all 1?", a: "BFS (Breadth-First Search) is simpler and runs in O(V + E) time." }]
+  summary: "Find shortest paths from a source node in weighted graphs using Dijkstra's Algorithm.",
+  definitions: [{ term: "Dijkstra's", def: "Greedy graph algorithm for non-negative weighted shortest paths." }]
 };

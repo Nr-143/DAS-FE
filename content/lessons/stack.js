@@ -1,8 +1,8 @@
 /**
- * DSA Tracker — Lesson Content: Stack
- * ─────────────────────────────────────
- * Independent content module adhering to schema.
- * Includes interactive Stack widget configuration (rendered by app.js).
+ * DSA Tracker — Lesson Content: Stack (Level 2)
+ * ──────────────────────────────────────────────
+ * Comprehensive interactive module: LIFO Concept, Call Stack Mapping,
+ * Operations (push/pop/peek/isEmpty), Undo/Redo Trace, and Visualizer.
  */
 
 window.LESSONS_CONTENT = window.LESSONS_CONTENT || {};
@@ -11,140 +11,170 @@ window.LESSONS_CONTENT["stack"] = {
   id: "stack",
   title: "Stack",
   levelTitle: "Level 2 — Linear Data Structures",
-  summary: "Master the LIFO (Last In, First Out) data structure — push, pop, peek — and understand how it maps to the call stack from the Function Calls lesson.",
+  summary: "Master the LIFO (Last In, First Out) principle, vertical container mechanics, push, pop, peek, and how stacks govern runtime call stacks and undo/redo histories.",
 
   definitions: [
     {
       term: "Stack",
-      def: "A linear structure that follows LIFO (Last In, First Out): the most recently added item is the first one removed."
+      def: "A restricted linear data structure following the LIFO (Last In, First Out) principle: elements can only be added or removed from a single open end called the TOP."
+    },
+    {
+      term: "LIFO (Last In, First Out)",
+      def: "The ordering principle where the most recently inserted element is always the first one to be removed. Think of a stack of dinner plates or a tennis ball canister."
     },
     {
       term: "Push",
-      def: "Adds an item to the top of the stack."
+      def: "The operation that places a new element onto the TOP of the stack, incrementing the stack height."
     },
     {
       term: "Pop",
-      def: "Removes and returns the item from the top of the stack."
+      def: "The operation that removes and returns the element currently at the TOP of the stack, decrementing the stack height."
     },
     {
-      term: "Peek (top)",
-      def: "Looks at the top item without removing it."
+      term: "Peek / Top",
+      def: "The operation that inspects the topmost value without removing it or modifying the stack."
+    },
+    {
+      term: "Stack Overflow & Underflow",
+      def: "Underflow occurs when calling <code>pop()</code> on an empty stack. Overflow occurs when pushing onto a fixed-size stack that has exceeded its maximum allocated memory capacity (such as recursive Call Stack Overflow)."
     }
   ],
 
-  howItWorksTogether: "A stack only exposes one end — the \"top\" — for both adding and removing. That single-ended restriction is exactly what creates LIFO order, and it's also exactly how the call stack works (see the <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"function-calls\">Function Calls</a> / <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"recursion\">Recursion</a> lessons): each call is pushed on top, and only the most recent one can pop off before the one beneath it.",
+  howItWorksTogether: "By restricting all insertions and deletions to a single end (the top), stacks provide strict O(1) constant-time performance for both <code>push()</code> and <code>pop()</code>. You never need to shift other elements or traverse the structure. This matches the JavaScript runtime's Call Stack (covered in <a href=\"#\" class=\"lesson-cross-link\" data-topic=\"function-calls\">Function Calls</a>): each function invocation pushes a frame onto the stack, and when the function completes, its frame pops off, returning execution control to the frame immediately beneath it.",
 
-  // Flag for app.js to render the interactive Stack widget
+  whyMatters: "Stacks are everywhere in computer systems: runtime function call stacks, undo/redo mechanisms in text editors, browser history back buttons, compiler syntax parsing (balanced parentheses), evaluating postfix/prefix mathematical expressions, and Depth-First Search (DFS) graph traversals.",
+
   interactiveWidget: "stack",
 
-  visual: {
-    caption: "Figure 1: Stack — LIFO order. Push adds to top, Pop removes from top. Only the top element is accessible.",
-    diagramSvg: `
-      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
-        <rect width="700" height="260" fill="var(--bg-body)" rx="12" />
-        <text x="350" y="28" fill="var(--text-primary)" font-size="14" font-weight="bold" text-anchor="middle">Stack: LIFO — Last In, First Out</text>
-        
-        <g transform="translate(220, 45)">
-          <rect x="0" y="0" width="260" height="175" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="2" rx="10"/>
-          
-          <rect x="30" y="125" width="200" height="35" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="1.5" rx="5"/>
-          <text x="130" y="148" fill="var(--text-primary)" font-size="13" font-weight="600" text-anchor="middle">1 (bottom)</text>
-          
-          <rect x="30" y="85" width="200" height="35" fill="rgba(108,99,255,0.15)" stroke="var(--accent-primary)" stroke-width="1.5" rx="5"/>
-          <text x="130" y="108" fill="var(--text-primary)" font-size="13" font-weight="600" text-anchor="middle">2</text>
-          
-          <rect x="30" y="45" width="200" height="35" fill="rgba(45,138,104,0.12)" stroke="#2d8a68" stroke-width="2" rx="5"/>
-          <text x="130" y="68" fill="#34d399" font-size="13" font-weight="bold" text-anchor="middle">3 ← TOP</text>
-          
-          <text x="130" y="20" fill="var(--text-muted)" font-size="11" text-anchor="middle">push()/pop() here only ↑</text>
-        </g>
-        
-        <g transform="translate(30, 60)">
-          <text x="0" y="10" fill="#34d399" font-size="12" font-weight="bold">push(3)</text>
-          <path d="M 55 15 Q 100 20 160 40" stroke="#2d8a68" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-g)"/>
-          
-          <text x="0" y="65" fill="#f87171" font-size="12" font-weight="bold">pop() → 3</text>
-          <path d="M 70 55 Q 110 45 155 40" stroke="#b84a4a" stroke-width="2" fill="none" stroke-dasharray="4,3" marker-end="url(#stk-arrow-r)"/>
-        </g>
-        
-        <g transform="translate(510, 80)">
-          <text x="0" y="0" fill="var(--text-muted)" font-size="11" font-weight="bold">Array state:</text>
-          <text x="0" y="18" fill="var(--accent-primary)" font-size="12" font-family="monospace">[1, 2, 3]</text>
-          <text x="0" y="42" fill="var(--text-muted)" font-size="11" font-weight="bold">After pop():</text>
-          <text x="0" y="60" fill="#f87171" font-size="12" font-family="monospace">[1, 2]</text>
-        </g>
-        
-        <defs>
-          <marker id="stk-arrow-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2d8a68"/>
-          </marker>
-          <marker id="stk-arrow-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84a4a"/>
-          </marker>
-        </defs>
-      </svg>
-    `
+  workedExample: {
+    title: "Stack LIFO Execution Trace",
+    primitiveText: "<code>const stack = [];<br/><br/>stack.push(10); // stack: [10], TOP = 10<br/>stack.push(20); // stack: [10, 20], TOP = 20<br/>stack.push(30); // stack: [10, 20, 30], TOP = 30<br/><br/>const removed = stack.pop(); // returns 30, stack: [10, 20], TOP = 20<br/>const topVal = stack[stack.length - 1]; // peek: 20 (not removed)</code>",
+    referenceText: "Notice that 30, the LAST item pushed, was the FIRST item popped!"
   },
 
-  codeSnippet: `<span class="cm">// Stack using a plain JavaScript array</span>
-<span class="kw">const</span> stack = [];
+  codeSnippet: `// Stack Implementation using a JavaScript Array
+class Stack {
+  constructor() {
+    this.items = [];
+  }
 
-stack.<span class="fn">push</span>(<span class="num">1</span>);
-stack.<span class="fn">push</span>(<span class="num">2</span>);
-stack.<span class="fn">push</span>(<span class="num">3</span>);  <span class="cm">// stack is now [1, 2, 3]</span>
+  // 1. PUSH — O(1)
+  push(val) {
+    this.items.push(val); // adds to top
+  }
 
-stack.<span class="fn">pop</span>();    <span class="cm">// returns 3 → stack is [1, 2]</span>
+  // 2. POP — O(1)
+  pop() {
+    if (this.isEmpty()) return null;
+    return this.items.pop(); // removes and returns top
+  }
 
-stack[stack.length - <span class="num">1</span>];  <span class="cm">// peek: 2, not removed</span>`,
+  // 3. PEEK — O(1)
+  peek() {
+    if (this.isEmpty()) return null;
+    return this.items[this.items.length - 1]; // inspects top
+  }
+
+  // 4. IS EMPTY — O(1)
+  isEmpty() {
+    return this.items.length === 0;
+  }
+
+  // 5. SIZE — O(1)
+  size() {
+    return this.items.length;
+  }
+}
+
+// Execution Example
+const stack = new Stack();
+stack.push(10);
+stack.push(20);
+stack.push(30);
+console.log(stack.pop()); // 30 (LIFO)
+console.log(stack.peek()); // 20`,
 
   complexityNotes: [
-    "push(): O(1) Constant Time.",
+    "push(item): O(1) Constant Time.",
     "pop(): O(1) Constant Time.",
-    "peek (top): O(1) Constant Time — everything happens at one end."
+    "peek() / top: O(1) Constant Time.",
+    "isEmpty(): O(1) Constant Time.",
+    "Search (if supported): O(n) Linear Time.",
+    "Space Complexity: O(n) where n is the number of elements pushed."
   ],
 
   commonMistakes: [
     {
-      title: "Mistake 1: Using shift()/unshift() instead of push()/pop()",
-      desc: "Using <code>shift()</code>/<code>unshift()</code> to build a stack on an array works on the <em>front</em> and is O(n), silently making every operation slow. Use <code>push()</code>/<code>pop()</code> which work at the end — O(1)."
+      title: "Mistake 1: Confusing pop() with peek()",
+      desc: "<code>pop()</code> removes the top element and decreases the size. <code>peek()</code> only reads the top value while leaving the stack completely unchanged."
     },
     {
-      title: "Mistake 2: Expecting random access from a stack",
-      desc: "A stack only exposes the top by design. Expecting to \"peek the 3rd item from the top\" defeats the purpose of the LIFO abstraction."
+      title: "Mistake 2: Using unshift() and shift() instead of push() and pop()",
+      desc: "In JavaScript, <code>unshift()</code> and <code>shift()</code> operate at index 0, requiring O(n) element shifting. Using them to build a stack degrades all operations from O(1) to O(n) linear time. Always use <code>push()</code> and <code>pop()</code> at the end of the array."
+    },
+    {
+      title: "Mistake 3: Popping from an Empty Stack (Stack Underflow)",
+      desc: "Calling <code>pop()</code> without first checking <code>isEmpty()</code> returns <code>undefined</code>. In statically typed environments, this causes a fatal runtime underflow error."
+    }
+  ],
+
+  miniQuiz: [
+    {
+      question: "Q1. What is the fundamental ordering principle of a Stack?",
+      options: [
+        "A. FIFO (First In, First Out)",
+        "B. LIFO (Last In, First Out)",
+        "C. Random Access by Index",
+        "D. Sorted Order by Value"
+      ],
+      answer: "B",
+      explanation: "A stack is strictly LIFO (Last In, First Out). The most recently added item is the first one removed."
+    },
+    {
+      question: "Q2. If you push 10, then push 20, then push 30, and then call pop(), which element is returned?",
+      options: [
+        "A. 10",
+        "B. 20",
+        "C. 30",
+        "D. undefined"
+      ],
+      answer: "C",
+      explanation: "30 was the last element pushed onto the top of the stack, so LIFO ensures it is the first element popped."
     }
   ],
 
   practice: [
     {
-      q: "Question 1: Push 1, 2, 3, then pop twice — what's left, and what came out?",
-      a: "First pop returns 3, second pop returns 2. What's left in the stack: [1]. LIFO order means the most recently pushed items come out first."
+      q: "How does a compiler use a stack to check for valid matching parentheses?",
+      a: "Iterate through the string. Whenever an opening bracket (`(`, `{`, `[`) is encountered, push it onto the stack. Whenever a closing bracket (`)`, `}`, `]`) is encountered, pop the top element from the stack and verify that it matches. If the stack is empty at the end, the string is balanced."
     },
     {
-      q: "Question 2: Why would shift()/unshift() be a performance mistake for a stack?",
-      a: "`shift()` and `unshift()` operate on the front of the array, which is O(n) because every element must shift. `push()`/`pop()` operate on the end — O(1). Using the wrong end makes every stack operation unnecessarily slow."
+      q: "Why does recursive code cause a 'Maximum Call Stack Size Exceeded' error?",
+      a: "Every recursive function call pushes a new execution stack frame containing arguments and local variables onto the runtime call stack. Without a proper base case, frames continue pushing until available memory is exhausted, causing a stack overflow."
     }
   ],
 
   challenge: {
-    titleText: "Challenge: Balanced Brackets Checker",
-    desc: "Use a stack to check whether a string of brackets (e.g. <code>\"{[()]}\"</code>) is balanced. Push opening brackets, pop on closing brackets, and verify each closing bracket matches the most recent opening bracket."
+    titleText: "Challenge: Implement a MinStack with O(1) getMin()",
+    desc: "Design a stack that supports `push`, `pop`, `top`, and retrieving the minimum element `getMin()` all in O(1) constant time! Hint: Maintain an auxiliary stack that tracks the current minimum at each state level."
   },
 
   leetcodePractice: {
     showProcessCallout: true,
-    suggestedStartingNote: "Start with 20 — Valid Parentheses.",
+    suggestedStartingNote: "Start with 20 — Valid Parentheses. It is the quintessential stack problem for interviews and builds intuition for bracket matching.",
     workedTrace: `Input:  { [ ( ) ] }
 Stack:  {
         { [
         { [ (
-        { [        (closing matches, pop)
-        {
-        empty → valid`,
+        { [        (closing ')' matches '(', pop)
+        {          (closing ']' matches '[', pop)
+        empty      (closing '}' matches '{', pop)
+Result: Valid!`,
     problems: [
-      { num: 20, title: "Valid Parentheses", slug: "valid-parentheses", isSuggestedStart: true, roadmapStep: 7 },
-      { num: 155, title: "Min Stack", slug: "min-stack" },
-      { num: 225, title: "Implement Stack using Queues", slug: "implement-stack-using-queues" },
-      { num: 232, title: "Implement Queue using Stacks", slug: "implement-queue-using-stacks" }
+      { num: 20, title: "Valid Parentheses", concept: "Matching Pairs + Stack", slug: "valid-parentheses", isSuggestedStart: true, roadmapStep: 7, isImmediateNext: true },
+      { num: 155, title: "Min Stack", concept: "Dual Stack Tracking", slug: "min-stack", isImmediateNext: true },
+      { num: 225, title: "Implement Stack using Queues", concept: "Queue Rotation", slug: "implement-stack-using-queues" },
+      { num: 232, title: "Implement Queue using Stacks", concept: "In-Out Reversal Stacks", slug: "implement-queue-using-stacks" }
     ]
   }
 };
