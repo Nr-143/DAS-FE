@@ -27,13 +27,6 @@
     'linked-list-doubly',
     'stack',
     'queue',
-
-    // Non-Linear Data Structures (Level 5 Trees & Level 6 Graphs)
-    'binary-trees',
-    'binary-search-tree',
-    'graph-representation',
-    'breadth-first-search',
-    'depth-first-search'
   ]);
 
   window.TOPIC_CONFIG = {
