@@ -27,6 +27,10 @@
     'linked-list-doubly',
     'stack',
     'queue',
+
+    // Level 3 — Searching & Sorting (Unlocked topics 18 & 19)
+    'linear-search',
+    'binary-search',
   ]);
 
   window.TOPIC_CONFIG = {

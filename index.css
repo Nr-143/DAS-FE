@@ -5381,6 +5381,617 @@ html, body {
   }
 }
 
+/* ========================================================
+   SEARCH ALGORITHMS VISUALIZER (LINEAR & BINARY SEARCH)
+   ======================================================== */
+
+.search-visual-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.search-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-meta-pill {
+  font-size: 0.76rem;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.search-meta-pill strong {
+  color: var(--text-primary);
+}
+
+.search-track-outer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 4px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-body);
+  border: 1px solid var(--border-subtle);
+}
+
+.search-pointer-slot {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-pointer {
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.search-pointer--active {
+  background: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+.search-pointer--found {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.search-pointers-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.search-boundary-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.search-boundary--low {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.search-boundary--high {
+  background: rgba(168, 85, 247, 0.2);
+  color: #C084FC;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.search-boundary--both {
+  background: rgba(234, 179, 8, 0.2);
+  color: #FACC15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.search-boundary--mid {
+  background: rgba(245, 158, 11, 0.25);
+  color: #F59E0B;
+  border: 1px solid #F59E0B;
+}
+
+.search-boundary--found {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+/* Cell States */
+.search-cell--current {
+  border-color: var(--accent-primary) !important;
+  background: rgba(108, 99, 255, 0.22) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 14px rgba(108, 99, 255, 0.35);
+}
+
+.search-cell--checked {
+  opacity: 0.6;
+  border-color: var(--text-muted) !important;
+  background: var(--bg-surface) !important;
+}
+
+.search-cell--found {
+  border-color: #10B981 !important;
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #10B981 !important;
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.search-cell--mid {
+  border-color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.22) !important;
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+}
+
+.search-cell--active-range {
+  border-color: var(--accent-primary);
+  background: rgba(108, 99, 255, 0.08);
+}
+
+.search-cell--discarded {
+  opacity: 0.28 !important;
+  filter: grayscale(1);
+  text-decoration: line-through;
+  background: var(--bg-surface) !important;
+  border-color: var(--border-default) !important;
+}
+
+/* Tags */
+.search-tag--current {
+  background: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+.search-tag--checked {
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--text-muted);
+}
+
+.search-tag--match {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.search-tag--mid {
+  background: #F59E0B;
+  color: #1E1E2E;
+}
+
+.search-tag--discarded {
+  background: rgba(100, 116, 139, 0.2);
+  color: var(--text-muted);
+}
+
+.search-tag--active {
+  background: rgba(108, 99, 255, 0.2);
+  color: var(--accent-primary);
+}
+
+.search-tag--pending {
+  background: var(--bg-body);
+  color: var(--text-muted);
+}
+
+/* Comparison Display Card */
+.search-cmp-card {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.search-cmp-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.search-cmp-expr {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-family: 'Fira Code', monospace;
+}
+
+/* Custom inputs bar */
+.search-custom-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg-body);
+  border: 1px dashed var(--border-accent);
+  border-radius: var(--radius-sm);
+}
+
+.search-custom-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.search-unsorted-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+  text-align: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* ========================================================
+   HEAD-TO-HEAD DUEL / COMPARISON CARD
+   ======================================================== */
+
+.search-duel-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-duel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.search-duel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-duel-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.search-duel-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.search-duel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--bg-body);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.search-duel-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-duel-target-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-target-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.search-target-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.search-target-chip {
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.search-target-chip:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.search-target-chip--active {
+  background: var(--accent-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--accent-primary) !important;
+}
+
+.search-duel-step-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.search-scoreboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.search-score-box {
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-score--linear {
+  border-left: 4px solid #38BDF8;
+}
+
+.search-score--binary {
+  border-left: 4px solid #10B981;
+}
+
+.search-score-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-score-name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-score-complexity {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.search-score-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  justify-content: space-around;
+}
+
+.search-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.metric-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Fira Code', monospace;
+}
+
+.metric-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.search-duel-canvas {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.duel-mini-cell {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.duel-cell--active {
+  background: var(--accent-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--accent-primary) !important;
+  transform: scale(1.08);
+}
+
+.duel-cell--checked {
+  background: rgba(148, 163, 184, 0.15) !important;
+  opacity: 0.55;
+}
+
+.duel-cell--found {
+  background: #10B981 !important;
+  color: #FFFFFF !important;
+  border-color: #10B981 !important;
+  transform: scale(1.12);
+}
+
+.duel-cell--mid {
+  background: #F59E0B !important;
+  color: #1E1E2E !important;
+  border-color: #F59E0B !important;
+  transform: scale(1.08);
+}
+
+.duel-cell--discarded {
+  opacity: 0.22 !important;
+  text-decoration: line-through;
+  background: var(--bg-body) !important;
+}
+
+.duel-cell--in-range {
+  border-color: #38BDF8;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.search-duel-log {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-family: 'Fira Code', monospace;
+  min-height: 22px;
+}
+
+.search-efficiency-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--accent-gradient-subtle);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+}
+
+.callout-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.callout-content {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+/* Responsive Table Wrapper */
+.concept-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 14px 0;
+}
+
+/* Mobile Responsiveness for Search Visualizer */
+@media (max-width: 900px) {
+  .search-scoreboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .search-duel-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-duel-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .search-duel-target-selector {
+    width: 100%;
+  }
+
+  .search-target-chips {
+    width: 100%;
+  }
+
+  .search-duel-canvas {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .search-custom-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .search-input-group input {
+    width: 100% !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .array-cell, .duel-mini-cell, .search-cmp-card {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+
 
 
 

@@ -123,6 +123,9 @@
     error: null
   };
 
+  /* Set of problem slugs the current user has marked as solved */
+  let solvedProblems = new Set();
+
   /* ────────────────────────────────────────────
      AUTHENTICATION & API CLIENT WRAPPER
   ──────────────────────────────────────────── */
@@ -203,15 +206,18 @@
         localStorage.setItem('dsa_has_session', 'true');
         renderHeaderAuthUI();
         await syncProgressWithServer();
+        await fetchLeetCodeSolved();
       } else if (authState.accessToken) {
         // Access token exists in localStorage, sync progress to verify session validity
         await syncProgressWithServer();
+        await fetchLeetCodeSolved();
       } else {
         clearAuthState();
       }
     } catch (err) {
       if (authState.accessToken) {
         await syncProgressWithServer();
+        await fetchLeetCodeSolved();
       } else {
         clearAuthState();
       }
@@ -233,6 +239,59 @@
       }
     } catch (err) {
       console.warn('Could not sync progress with server:', err);
+    }
+  }
+
+  async function fetchLeetCodeSolved() {
+    if (!authState.isLoggedIn) return;
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/leetcode/solved`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.solvedSlugs && Array.isArray(data.solvedSlugs)) {
+        solvedProblems = new Set(data.solvedSlugs);
+      }
+    } catch (err) {
+      console.warn('Could not fetch LeetCode solved status:', err);
+    }
+  }
+
+  async function toggleLeetCodeSolved(slug, currentlySolved) {
+    if (!authState.isLoggedIn) {
+      openLoginModal('Log in to track your LeetCode solved problems');
+      return;
+    }
+    const nextSolved = !currentlySolved;
+    // Optimistic UI
+    if (nextSolved) solvedProblems.add(slug);
+    else solvedProblems.delete(slug);
+
+    // Update the card button immediately
+    const btn = document.querySelector(`[data-solve-slug="${slug}"]`);
+    if (btn) {
+      btn.textContent = nextSolved ? '✅ Solved' : 'Mark Solved';
+      btn.classList.toggle('lc-solved-btn--done', nextSolved);
+    }
+    const card = document.querySelector(`[data-lc-slug="${slug}"]`);
+    if (card) card.classList.toggle('leetcode-card--solved', nextSolved);
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/leetcode/solved/${slug}`, {
+        method: 'POST',
+        body: { solved: nextSolved }
+      });
+      if (!res.ok) throw new Error('API error');
+      showToast(nextSolved ? '✅ Marked as Solved!' : 'Marked as unsolved.');
+    } catch (err) {
+      // Revert
+      if (nextSolved) solvedProblems.delete(slug);
+      else solvedProblems.add(slug);
+      if (btn) {
+        btn.textContent = currentlySolved ? '✅ Solved' : 'Mark Solved';
+        btn.classList.toggle('lc-solved-btn--done', currentlySolved);
+      }
+      if (card) card.classList.toggle('leetcode-card--solved', currentlySolved);
+      showToast('Could not save. Please check your connection.', 'warning');
     }
   }
 
@@ -1417,6 +1476,29 @@
       panel.appendChild(tradeSec);
     }
 
+    // 9b. Algorithm Comparison (Linear Search vs. Binary Search)
+    if (content.comparison) {
+      const compSection = document.createElement('section');
+      compSection.className = 'lesson-section reveal-on-scroll';
+      compSection.id = 'section-comparison';
+      compSection.innerHTML = `
+        <h2 class="lesson-section__title">${sectionCount++}. ${escapeHtml(content.comparison.title || 'Linear Search vs. Binary Search Comparison')}</h2>
+        <div class="lesson-section__body">
+          ${content.comparison.html || ''}
+          ${content.comparison.interactiveWidget ? '<div id="comparison-widget-container" class="widget-container" style="margin-top:20px;"></div>' : ''}
+        </div>
+      `;
+      panel.appendChild(compSection);
+      if (content.comparison.interactiveWidget === 'search-comparison' && typeof window.mountSearchComparisonVisualizer === 'function') {
+        setTimeout(() => {
+          const compContainer = compSection.querySelector('#comparison-widget-container');
+          if (compContainer) {
+            window.mountSearchComparisonVisualizer(compContainer);
+          }
+        }, 50);
+      }
+    }
+
     // 10. Common Mistakes
     if (content.commonMistakes) {
       const mistakesSec = document.createElement('section');
@@ -2186,6 +2268,10 @@
       activeWidgetCleanup = mountSpaceComplexityVisualizer(container);
     } else if (wType === 'dsa-intro-visualizer') {
       activeWidgetCleanup = mountDSAIntroVisualizer(container);
+    } else if (wType === 'linear-search' && typeof window.mountLinearSearchVisualizer === 'function') {
+      activeWidgetCleanup = window.mountLinearSearchVisualizer(container);
+    } else if (wType === 'binary-search' && typeof window.mountBinarySearchVisualizer === 'function') {
+      activeWidgetCleanup = window.mountBinarySearchVisualizer(container);
     } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
       renderAlgoVisualizer(container, wType);
     }
@@ -3627,6 +3713,7 @@ for (let i = 1; i <= 3; i++) {
           ${content.codeSnippet ? '<li><a href="#section-code-snippet" class="lesson-toc__link">Code Snippet</a></li>' : ''}
           ${content.complexityNotes ? '<li><a href="#section-complexity-notes" class="lesson-toc__link">Complexity Notes</a></li>' : ''}
           ${content.tradeOffs ? '<li><a href="#section-trade-offs" class="lesson-toc__link">Trade-offs</a></li>' : ''}
+          ${content.comparison ? '<li><a href="#section-comparison" class="lesson-toc__link">Algorithm Comparison</a></li>' : ''}
           ${content.commonMistakes ? '<li><a href="#section-common-mistakes" class="lesson-toc__link">Common Mistakes</a></li>' : ''}
           ${content.realWorldDsa ? '<li><a href="#section-real-world-dsa" class="lesson-toc__link">Real-World DSA You Already Use</a></li>' : ''}
           ${content.historyFact ? '<li><a href="#section-history-fact" class="lesson-toc__link">A Bit of History</a></li>' : ''}
@@ -4776,6 +4863,7 @@ for (let i = 1; i <= 3; i++) {
       showToast(`Signed in as ${data.user.email}`);
 
       await syncProgressWithServer();
+      await fetchLeetCodeSolved();
 
       if (pendingAction && pendingAction.type === 'toggle_topic') {
         const topicToToggle = pendingAction.topicId;
@@ -5045,7 +5133,21 @@ for (let i = 1; i <= 3; i++) {
     }
 
     // Render Cards
+    const solvedCount = problems.filter(p => solvedProblems.has(p.slug)).length;
+    const summaryBar = problems.length > 0 ? `
+      <div class="lc-solved-summary">
+        <span class="lc-solved-summary__text">
+          <span class="lc-solved-summary__check">✅</span>
+          <strong>${solvedCount}</strong> / ${problems.length} solved
+        </span>
+        <div class="lc-solved-summary__bar">
+          <div class="lc-solved-summary__fill" style="width:${Math.round((solvedCount/problems.length)*100)}%"></div>
+        </div>
+      </div>
+    ` : '';
+
     const cardsHTML = problems.map(problem => {
+      const isSolved = solvedProblems.has(problem.slug);
       const diffClass = problem.difficulty === 'Easy' ? 'badge--easy' : (problem.difficulty === 'Medium' ? 'badge--medium' : 'badge--hard');
       const diffDot = problem.difficulty === 'Easy' ? '🟢' : (problem.difficulty === 'Medium' ? '🟡' : '🔴');
 
@@ -5062,7 +5164,8 @@ for (let i = 1; i <= 3; i++) {
       ).join('');
 
       return `
-        <div class="leetcode-card">
+        <div class="leetcode-card ${isSolved ? 'leetcode-card--solved' : ''}" data-lc-slug="${escapeHtml(problem.slug)}">
+          ${isSolved ? '<div class="lc-solved-ribbon">✅ Solved</div>' : ''}
           <div class="leetcode-card__top">
             <span class="leetcode-card__number">#${problem.leetcode_id}</span>
             <span class="leetcode-card__diff ${diffClass}">${diffDot} ${escapeHtml(problem.difficulty)}</span>
@@ -5087,12 +5190,25 @@ for (let i = 1; i <= 3; i++) {
               <span>View on LeetCode</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
+            <button class="lc-solved-btn ${isSolved ? 'lc-solved-btn--done' : ''}" data-solve-slug="${escapeHtml(problem.slug)}">
+              ${isSolved ? '✅ Solved' : 'Mark Solved'}
+            </button>
           </div>
         </div>
       `;
     }).join('');
 
-    gridContainer.innerHTML = `<div class="leetcode-cards-grid">${cardsHTML}</div>`;
+    gridContainer.innerHTML = summaryBar + `<div class="leetcode-cards-grid">${cardsHTML}</div>`;
+
+    // Bind solve-toggle buttons (event delegation on the grid)
+    gridContainer.querySelectorAll('.lc-solved-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const slug = btn.getAttribute('data-solve-slug');
+        const currentlySolved = solvedProblems.has(slug);
+        toggleLeetCodeSolved(slug, currentlySolved);
+      });
+    });
   }
 
   /* ────────────────────────────────────────────

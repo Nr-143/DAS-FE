@@ -32,7 +32,10 @@ const itemsToCopy = [
   'topics-config.js',
   'logo.png',
   'data',
-  'content'
+  'content',
+  'visualizers',
+  'iconify-icon.min.js',
+  'icons-bundle.js'
 ];
 
 itemsToCopy.forEach(item => {
