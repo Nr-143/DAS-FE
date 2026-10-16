@@ -279,42 +279,41 @@
     if (step.cmpResult) {
       const isMatch = step.cmpResult.result;
       const color = isMatch ? '#10B981' : '#EF4444';
-      const symbol = isMatch ? '=== (Match!)' : '!== (No match)';
       cmpHtml = `
         <div class="search-cmp-card" style="border-color:${color};">
           <span class="search-cmp-label">Current Comparison:</span>
-          <span class="search-cmp-expr">
-            <code>arr[${step.currentIndex}]</code> (<strong>${step.cmpResult.left}</strong>)
-            <strong style="color:${color}; margin: 0 4px;">${step.cmpResult.op}</strong>
-            <code>target</code> (<strong>${step.cmpResult.right}</strong>)
-            &nbsp;➔&nbsp;
-            <span style="color:${color}; font-weight:700;">${isMatch ? 'TRUE ✓ MATCH' : 'FALSE ✗'}</span>
-          </span>
+          <div class="search-cmp-expr">
+            <span class="search-cmp-part"><code>arr[${step.currentIndex}]</code> (<strong>${step.cmpResult.left}</strong>)</span>
+            <span class="search-cmp-op" style="color:${color}; font-weight:700;">${step.cmpResult.op}</span>
+            <span class="search-cmp-part"><code>target</code> (<strong>${step.cmpResult.right}</strong>)</span>
+            <span class="search-cmp-arrow" style="color:var(--text-muted);">➔</span>
+            <span class="search-cmp-result" style="color:${color}; font-weight:700;">${isMatch ? 'TRUE ✓ MATCH' : 'FALSE ✗'}</span>
+          </div>
         </div>
       `;
     } else if (step.foundIndex !== -1) {
       cmpHtml = `
         <div class="search-cmp-card" style="border-color:#10B981; background:rgba(16,185,129,0.12);">
           <span class="search-cmp-label">Result:</span>
-          <span class="search-cmp-expr" style="color:#10B981; font-weight:700;">
+          <div class="search-cmp-expr" style="color:#10B981; font-weight:700;">
             ✓ Success: Target ${target} located at index [${step.foundIndex}] after ${step.comparisons} comparisons!
-          </span>
+          </div>
         </div>
       `;
     } else if (step.checkedIndices && step.checkedIndices.length === arr.length) {
       cmpHtml = `
         <div class="search-cmp-card" style="border-color:#EF4444; background:rgba(239,68,68,0.08);">
           <span class="search-cmp-label">Result:</span>
-          <span class="search-cmp-expr" style="color:#EF4444; font-weight:700;">
+          <div class="search-cmp-expr" style="color:#EF4444; font-weight:700;">
             ✗ Target ${target} not found after checking all ${arr.length} elements. Returns -1.
-          </span>
+          </div>
         </div>
       `;
     } else {
       cmpHtml = `
         <div class="search-cmp-card">
           <span class="search-cmp-label">Status:</span>
-          <span class="search-cmp-expr">Press <strong>Play</strong> or <strong>Step</strong> to begin linear scan. Target = <strong>${target}</strong></span>
+          <div class="search-cmp-expr">Press <strong>Play</strong> or <strong>Step</strong> to begin linear scan. Target = <strong>${target}</strong></div>
         </div>
       `;
     }
@@ -333,10 +332,37 @@
             ${cellsHtml}
           </div>
         </div>
+        ${arr.length > 4 ? `
+          <div class="search-scroll-hint">
+            <iconify-icon icon="lucide:arrow-right-left" width="13" height="13"></iconify-icon>
+            <span>Scroll horizontally to view all ${arr.length} elements</span>
+          </div>
+        ` : ''}
 
         ${cmpHtml}
       </div>
     `;
+
+    // Auto-scroll track so active/found cell is always centered and visible on any screen width
+    setTimeout(() => {
+      const trackOuter = container.querySelector('.search-track-outer');
+      if (!trackOuter) return;
+      const activeCell = container.querySelector('.search-cell--current, .search-cell--found');
+      if (activeCell) {
+        const wrapperEl = activeCell.closest('.array-cell-wrapper') || activeCell;
+        try {
+          wrapperEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        } catch (e) {
+          const cellLeft = wrapperEl.offsetLeft;
+          const cellWidth = wrapperEl.offsetWidth;
+          const trackWidth = trackOuter.clientWidth;
+          const scrollTarget = cellLeft - (trackWidth / 2) + (cellWidth / 2);
+          trackOuter.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
+        }
+      } else {
+        trackOuter.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+    }, 20);
   }
 
   /**
@@ -362,7 +388,7 @@
       <div class="search-custom-inputs">
         <label class="search-input-group">
           <span>Array (comma-separated):</span>
-          <input type="text" id="linear-custom-arr" class="widget-input" value="8, 3, 7, 4, 2, 6, 1, 5" style="min-width:210px;" />
+          <input type="text" id="linear-custom-arr" class="widget-input" value="8, 3, 7, 4, 2, 6, 1, 5" style="width:100%; max-width:240px;" />
         </label>
         <label class="search-input-group">
           <span>Target:</span>

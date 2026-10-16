@@ -214,6 +214,10 @@
             </div>
           </div>
           <div class="search-duel-canvas" id="duel-linear-canvas"></div>
+          <div class="search-scroll-hint" style="margin:4px auto 8px auto;">
+            <iconify-icon icon="lucide:arrow-right-left" width="13" height="13"></iconify-icon>
+            <span>Scroll horizontally to view all 16 elements</span>
+          </div>
           <div class="search-duel-log" id="duel-linear-log">Awaiting start...</div>
         </div>
 
@@ -237,6 +241,10 @@
             </div>
           </div>
           <div class="search-duel-canvas" id="duel-binary-canvas"></div>
+          <div class="search-scroll-hint" style="margin:4px auto 8px auto;">
+            <iconify-icon icon="lucide:arrow-right-left" width="13" height="13"></iconify-icon>
+            <span>Scroll horizontally to view all 16 elements</span>
+          </div>
           <div class="search-duel-log" id="duel-binary-log">Awaiting start...</div>
         </div>
       </div>
@@ -322,6 +330,31 @@
           Target: <strong>${currentTarget}</strong>. Step through to observe how Binary Search eliminates entire sections while Linear Search inspects one by one.
         `;
       }
+
+      // Auto-scroll duel canvases to keep active cells centered on small screens
+      setTimeout(() => {
+        const linActive = linCanvas.querySelector('.duel-cell--active, .duel-cell--found');
+        if (linActive) {
+          try {
+            linActive.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          } catch (e) {
+            linCanvas.scrollTo({ left: Math.max(0, linActive.offsetLeft - linCanvas.clientWidth / 2 + linActive.offsetWidth / 2), behavior: 'smooth' });
+          }
+        } else if (currentStepIdx === 0) {
+          linCanvas.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+
+        const binActive = binCanvas.querySelector('.duel-cell--mid, .duel-cell--found');
+        if (binActive) {
+          try {
+            binActive.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          } catch (e) {
+            binCanvas.scrollTo({ left: Math.max(0, binActive.offsetLeft - binCanvas.clientWidth / 2 + binActive.offsetWidth / 2), behavior: 'smooth' });
+          }
+        } else if (currentStepIdx === 0) {
+          binCanvas.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+      }, 20);
     }
 
     function stopDuel() {
