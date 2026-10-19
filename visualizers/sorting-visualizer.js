@@ -1314,15 +1314,15 @@
       applyCustomBtn.addEventListener('click', applyCustomInput);
     }
 
-    // Return cleanup callback for router unmount
-    return {
-      destroy() {
-        if (player) {
-          player.destroy();
-        }
-        container.innerHTML = '';
+    // Return cleanup callback for router unmount (callable function with optional .destroy)
+    const cleanup = () => {
+      if (player) {
+        player.destroy();
       }
+      container.innerHTML = '';
     };
+    cleanup.destroy = cleanup;
+    return cleanup;
   }
 
   // Expose globally on window

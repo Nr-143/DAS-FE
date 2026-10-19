@@ -2212,7 +2212,15 @@
 
   function mountInteractiveWidget(content) {
     if (activeWidgetCleanup) {
-      activeWidgetCleanup();
+      try {
+        if (typeof activeWidgetCleanup === 'function') {
+          activeWidgetCleanup();
+        } else if (typeof activeWidgetCleanup.destroy === 'function') {
+          activeWidgetCleanup.destroy();
+        }
+      } catch (err) {
+        console.warn('Error during activeWidgetCleanup:', err);
+      }
       activeWidgetCleanup = null;
     }
     if (activeAlgoTimer) {
