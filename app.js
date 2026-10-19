@@ -2277,6 +2277,18 @@
       activeWidgetCleanup = window.mountLinearSearchVisualizer(container);
     } else if (wType === 'binary-search' && typeof window.mountBinarySearchVisualizer === 'function') {
       activeWidgetCleanup = window.mountBinarySearchVisualizer(container);
+    } else if (wType === 'bubble-sort' && typeof window.mountBubbleSortVisualizer === 'function') {
+      activeWidgetCleanup = window.mountBubbleSortVisualizer(container);
+    } else if (wType === 'selection-sort' && typeof window.mountSelectionSortVisualizer === 'function') {
+      activeWidgetCleanup = window.mountSelectionSortVisualizer(container);
+    } else if (wType === 'insertion-sort' && typeof window.mountInsertionSortVisualizer === 'function') {
+      activeWidgetCleanup = window.mountInsertionSortVisualizer(container);
+    } else if (wType === 'merge-sort' && typeof window.mountMergeSortVisualizer === 'function') {
+      activeWidgetCleanup = window.mountMergeSortVisualizer(container);
+    } else if (wType === 'quick-sort' && typeof window.mountQuickSortVisualizer === 'function') {
+      activeWidgetCleanup = window.mountQuickSortVisualizer(container);
+    } else if (['bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort', 'sorting-visualizer'].includes(wType) && typeof window.mountSortingVisualizer === 'function') {
+      activeWidgetCleanup = window.mountSortingVisualizer(container, wType);
     } else if (['linear-search', 'binary-search', 'bubble-sort', 'selection-sort', 'insertion-sort', 'merge-sort', 'quick-sort'].includes(wType)) {
       renderAlgoVisualizer(container, wType);
     }

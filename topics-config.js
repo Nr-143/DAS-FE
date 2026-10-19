@@ -28,9 +28,14 @@
     'stack',
     'queue',
 
-    // Level 3 — Searching & Sorting (Unlocked topics 18 & 19)
+    // Level 3 — Searching & Sorting (Unlocked topics 18, 19, 20, 21, 22, 23, 24)
     'linear-search',
     'binary-search',
+    'bubble-sort',
+    'selection-sort',
+    'insertion-sort',
+    'merge-sort',
+    'quick-sort',
   ]);
 
   window.TOPIC_CONFIG = {
