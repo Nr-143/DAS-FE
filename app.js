@@ -655,24 +655,37 @@
     }
   }
 
+  function prewarmBackend() {
+    try {
+      // Fire-and-forget pre-warm ping to wake up sleeping Render dyno early in the background
+      fetch(`${API_BASE}/health`, { mode: 'cors' }).catch(() => {});
+    } catch (e) {}
+  }
+
   async function boot() {
-    renderInitialLoader();
     initTheme();
-    await loadClientConfig();
+
+    // 1. Kick off background backend pre-warm (non-blocking)
+    prewarmBackend();
+
+    // 2. Load topics immediately (< 15ms from local cache/CDN)
     await loadTopics();
     loadProgress();
     bindGlobalEvents();
     bindAuthModalEvents();
     renderHeaderAuthUI();
-    await initAuthSession();
 
-    // Listen for browser Back & Forward navigation (popstate)
+    // 3. Immediately render initial view (0ms delay, no blocking spinners!)
+    handleRouteFromUrl(false);
+    render();
+
+    // 4. Listen for browser Back & Forward navigation (popstate)
     window.addEventListener('popstate', () => {
       handleRouteFromUrl(false);
       render();
     });
 
-    // Proactively refresh access token when user returns to tab after being away
+    // 5. Proactively refresh access token when user returns to tab after being away
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && authState.isLoggedIn) {
         const token = authState.accessToken || localStorage.getItem('dsa_access_token');
@@ -694,26 +707,58 @@
       }
     });
 
-    // Parse route from current URL and render initial view
-    handleRouteFromUrl(false);
-    render();
+    // 6. Asynchronously initialize auth session & sync progress in background
+    initAuthSession().catch(err => {
+      console.warn('Background auth session init error:', err);
+    });
   }
 
   async function loadTopics() {
+    // 1. Fast path: Instant Memory / localStorage Cache (0ms)
     try {
-      const res = await fetch(`${API_BASE}/topics`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      const rawTopics = json.topics || json.data || json;
-      topicsData = Array.isArray(rawTopics) ? rawTopics.sort((a, b) => a.order - b.order) : [];
-    } catch (err) {
-      console.warn('Backend topics fetch failed, falling back to local topics.json:', err.message);
+      const cached = localStorage.getItem('dsa_cached_topics');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          topicsData = parsed.sort((a, b) => a.order - b.order);
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch local static data/topics.json (10-20ms from Vercel edge CDN)
+    if (!topicsData || topicsData.length === 0) {
       try {
-        const fallbackRes = await fetch('data/topics.json');
-        const fallbackJson = await fallbackRes.json();
-        topicsData = fallbackJson.topics.sort((a, b) => a.order - b.order);
-      } catch (e) {
-        $main.innerHTML = `<p style="color:var(--text-secondary);text-align:center;margin-top:60px;">Could not load topic data.</p>`;
+        const localRes = await fetch('data/topics.json');
+        if (localRes.ok) {
+          const json = await localRes.json();
+          const list = json.topics || json;
+          if (Array.isArray(list) && list.length > 0) {
+            topicsData = list.sort((a, b) => a.order - b.order);
+            try { localStorage.setItem('dsa_cached_topics', JSON.stringify(topicsData)); } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn('Local topics.json fetch failed:', err.message);
+      }
+    }
+
+    // 3. Fallback: if local file somehow failed, try backend with a 3-second timeout
+    if (!topicsData || topicsData.length === 0) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`${API_BASE}/topics`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const json = await res.json();
+          const rawTopics = json.topics || json.data || json;
+          if (Array.isArray(rawTopics) && rawTopics.length > 0) {
+            topicsData = rawTopics.sort((a, b) => a.order - b.order);
+            try { localStorage.setItem('dsa_cached_topics', JSON.stringify(topicsData)); } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn('Backend topics fallback fetch failed:', err.message);
       }
     }
   }
@@ -5228,16 +5273,9 @@ for (let i = 1; i <= 3; i++) {
 
     try {
       let data = null;
-      try {
-        const res = await fetch(`${API_BASE}/leetcode/problems`);
-        if (res.ok) {
-          data = await res.json();
-        }
-      } catch (e) {
-        console.warn('API /leetcode/problems failed, trying fallback JSON:', e.message);
-      }
 
-      if (!data || !data.problems || data.problems.length === 0) {
+      // 1. Fetch local static data/leetcode_problems.json first (15-20ms from Vercel edge CDN)
+      try {
         const fallbackRes = await fetch('data/leetcode_problems.json');
         if (fallbackRes.ok) {
           const fallbackData = await fallbackRes.json();
@@ -5245,6 +5283,23 @@ for (let i = 1; i <= 3; i++) {
             problems: fallbackData.problems || [],
             total: (fallbackData.problems || []).length
           };
+        }
+      } catch (e) {
+        console.warn('Local leetcode_problems.json fetch error:', e.message);
+      }
+
+      // 2. If local fetch failed, fallback to API with a strict 3-second timeout
+      if (!data || !data.problems || data.problems.length === 0) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(`${API_BASE}/leetcode/problems`, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            data = await res.json();
+          }
+        } catch (e) {
+          console.warn('API /leetcode/problems fallback failed:', e.message);
         }
       }
 
