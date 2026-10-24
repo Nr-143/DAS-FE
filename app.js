@@ -41,7 +41,7 @@
   const IS_LOCAL_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const API_BASE = (window.ENV && window.ENV.API_BASE_URL)
     ? window.ENV.API_BASE_URL
-    : (IS_LOCAL_HOST ? 'http://localhost:3001/api' : 'https://dsa-be-i1c6.onrender.com/api');
+    : (IS_LOCAL_HOST ? `http://${window.location.hostname || 'localhost'}:3001/api` : 'https://dsa-be-i1c6.onrender.com/api');
   const GOOGLE_CLIENT_ID = (window.ENV && window.ENV.GOOGLE_CLIENT_ID) || '';
   const TOAST_DURATION = 2400;
 
@@ -113,11 +113,13 @@
 
   /* ────────── LeetCode Practice State ────────── */
   let leetcodeState = {
-    topic: 'all',
-    difficulty: 'all',
+    level: 'all',          // 'all' | 1 | 2 | 3 | 4 | 5 | 6 | 7
+    topic: 'all',          // 'all' | topicId
+    difficulty: 'all',     // 'all' | 'Easy' | 'Medium' | 'Hard'
     tag: 'all',
     search: '',
-    problems: [],
+    allProblems: [],       // Complete loaded problem list (221)
+    problems: [],          // Filtered & sorted problems
     tags: [],
     topicCounts: {},
     diffCounts: { Easy: 0, Medium: 0, Hard: 0 },
@@ -125,18 +127,78 @@
     page: 1,
     pageSize: 24,
     loading: false,
-    error: null
+    solvedLoading: false,  // True while progress request is in flight
+    error: null,
+    expandedLevels: new Set([1]), // Default expand Level 1
+    mobileRoadmapOpen: false
   };
 
   /* Set of problem slugs the current user has marked as solved */
   let solvedProblems = new Set();
 
   /* ────────────────────────────────────────────
-     AUTHENTICATION & API CLIENT WRAPPER
+     AUTHENTICATION & API CLIENT WRAPPER (RESILIENT)
   ──────────────────────────────────────────── */
+  let activeRefreshPromise = null;
+  let silentRefreshTimer = null;
+
+  function scheduleSilentRefresh(expiresInSeconds = 3600) {
+    if (silentRefreshTimer) {
+      clearTimeout(silentRefreshTimer);
+      silentRefreshTimer = null;
+    }
+    // Proactively refresh at 80% of token lifetime (e.g. at 48 mins for a 60-min token)
+    const refreshDelayMs = Math.max(60000, (expiresInSeconds * 0.8) * 1000);
+    silentRefreshTimer = setTimeout(async () => {
+      if (authState.isLoggedIn) {
+        await refreshAccessToken();
+      }
+    }, refreshDelayMs);
+  }
+
+  async function refreshAccessToken() {
+    if (activeRefreshPromise) {
+      return activeRefreshPromise;
+    }
+
+    activeRefreshPromise = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (!res.ok) {
+          return null;
+        }
+        const data = await res.json();
+        if (!data || !data.accessToken) {
+          return null;
+        }
+        authState.accessToken = data.accessToken;
+        if (data.user) {
+          authState.user = { ...(authState.user || {}), ...data.user };
+          localStorage.setItem('dsa_user', JSON.stringify(authState.user));
+        }
+        authState.isLoggedIn = true;
+        localStorage.setItem('dsa_access_token', data.accessToken);
+        localStorage.setItem('dsa_has_session', 'true');
+        scheduleSilentRefresh(data.expiresIn || 3600);
+        renderHeaderAuthUI();
+        return data.accessToken;
+      } catch (err) {
+        console.warn('Refresh access token network issue:', err);
+        return null;
+      } finally {
+        activeRefreshPromise = null;
+      }
+    })();
+
+    return activeRefreshPromise;
+  }
+
   async function fetchWithAuth(url, options = {}) {
     const opts = { ...options };
-    opts.headers = opts.headers || {};
+    opts.headers = { ...(opts.headers || {}) };
     opts.credentials = 'include'; // Include refresh cookie
 
     if (authState.accessToken) {
@@ -148,7 +210,23 @@
       opts.body = JSON.stringify(opts.body);
     }
 
-    const res = await fetch(url, opts);
+    let res = await fetch(url, opts);
+
+    // If Access Token has expired (HTTP 401), seamlessly refresh and retry once!
+    if (res.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        const retryOpts = { ...options };
+        retryOpts.headers = { ...(retryOpts.headers || {}) };
+        retryOpts.credentials = 'include';
+        retryOpts.headers['Authorization'] = `Bearer ${newToken}`;
+        if (retryOpts.body && typeof retryOpts.body === 'object' && !(retryOpts.body instanceof FormData)) {
+          retryOpts.headers['Content-Type'] = 'application/json';
+          retryOpts.body = JSON.stringify(retryOpts.body);
+        }
+        res = await fetch(url, retryOpts);
+      }
+    }
 
     if (res.status === 401) {
       clearAuthState();
@@ -159,6 +237,10 @@
   }
 
   function clearAuthState() {
+    if (silentRefreshTimer) {
+      clearTimeout(silentRefreshTimer);
+      silentRefreshTimer = null;
+    }
     authState.user = null;
     authState.accessToken = null;
     authState.isLoggedIn = false;
@@ -178,54 +260,33 @@
   async function initAuthSession() {
     const storedToken = localStorage.getItem('dsa_access_token') || sessionStorage.getItem('dsa_access_token');
     const storedUserRaw = localStorage.getItem('dsa_user');
+    const hasSession = localStorage.getItem('dsa_has_session') === 'true';
 
-    if (!storedToken && !storedUserRaw) {
-      clearAuthState();
-      return;
-    }
-
-    // Restore state from stored user & token immediately so hard refresh preserves auth state!
-    if (storedToken && storedUserRaw) {
+    // Optimistically restore cached user profile so UI renders signed-in immediately without delay
+    if (storedUserRaw) {
       try {
         authState.user = JSON.parse(storedUserRaw);
-        authState.accessToken = storedToken;
+        if (storedToken) authState.accessToken = storedToken;
         authState.isLoggedIn = true;
         renderHeaderAuthUI();
       } catch (e) { }
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        authState.accessToken = data.accessToken;
-        if (data.user) {
-          authState.user = data.user;
-          localStorage.setItem('dsa_user', JSON.stringify(data.user));
-        }
-        authState.isLoggedIn = true;
-        localStorage.setItem('dsa_access_token', data.accessToken);
-        localStorage.setItem('dsa_has_session', 'true');
-        renderHeaderAuthUI();
+    // If a session exists or tokens are stored, verify / refresh against backend
+    if (hasSession || storedToken || storedUserRaw) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
         await syncProgressWithServer();
         await fetchLeetCodeSolved();
-      } else if (authState.accessToken) {
-        // Access token exists in localStorage, sync progress to verify session validity
-        await syncProgressWithServer();
-        await fetchLeetCodeSolved();
-      } else {
+      } else if (!storedToken && !storedUserRaw) {
         clearAuthState();
-      }
-    } catch (err) {
-      if (authState.accessToken) {
+      } else {
+        // If server is temporarily unreachable (offline), don't abruptly destroy local session
         await syncProgressWithServer();
         await fetchLeetCodeSolved();
-      } else {
-        clearAuthState();
       }
+    } else {
+      clearAuthState();
     }
   }
 
@@ -248,7 +309,12 @@
   }
 
   async function fetchLeetCodeSolved() {
-    if (!authState.isLoggedIn) return;
+    if (!authState.isLoggedIn) {
+      solvedProblems.clear();
+      leetcodeState.solvedLoading = false;
+      return;
+    }
+    leetcodeState.solvedLoading = true;
     try {
       const res = await fetchWithAuth(`${API_BASE}/leetcode/solved`);
       if (!res.ok) return;
@@ -258,6 +324,11 @@
       }
     } catch (err) {
       console.warn('Could not fetch LeetCode solved status:', err);
+    } finally {
+      leetcodeState.solvedLoading = false;
+      if (typeof updateRoadmapUI === 'function' && currentView === 'leetcode') {
+        updateRoadmapUI();
+      }
     }
   }
 
@@ -440,12 +511,17 @@
 
     if (view === 'leetcode') {
       url.searchParams.set('view', 'leetcode');
-      url.searchParams.delete('topic');
       url.searchParams.delete('tab');
-      if (leetcodeState.topic && leetcodeState.topic !== 'all') {
-        url.searchParams.set('leetcodeTopic', leetcodeState.topic);
+      url.searchParams.delete('leetcodeTopic');
+      if (leetcodeState.level && leetcodeState.level !== 'all') {
+        url.searchParams.set('level', leetcodeState.level);
       } else {
-        url.searchParams.delete('leetcodeTopic');
+        url.searchParams.delete('level');
+      }
+      if (leetcodeState.topic && leetcodeState.topic !== 'all') {
+        url.searchParams.set('topic', leetcodeState.topic);
+      } else {
+        url.searchParams.delete('topic');
       }
       if (leetcodeState.difficulty && leetcodeState.difficulty !== 'all') {
         url.searchParams.set('difficulty', leetcodeState.difficulty);
@@ -461,6 +537,7 @@
       url.searchParams.delete('view');
       url.searchParams.set('topic', topicId);
       url.searchParams.set('tab', tab || activeTab || 'concept');
+      url.searchParams.delete('level');
       url.searchParams.delete('leetcodeTopic');
       url.searchParams.delete('difficulty');
       url.searchParams.delete('search');
@@ -468,6 +545,7 @@
       url.searchParams.set('view', 'grid');
       url.searchParams.delete('topic');
       url.searchParams.delete('tab');
+      url.searchParams.delete('level');
       url.searchParams.delete('leetcodeTopic');
       url.searchParams.delete('difficulty');
       url.searchParams.delete('search');
@@ -486,11 +564,16 @@
   function handleRouteFromUrl(pushHistory = false) {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
+    const levelParam = params.get('level');
     const topicParam = params.get('topic');
     const tabParam = params.get('tab');
-    const leetcodeTopicParam = params.get('leetcodeTopic');
     const difficultyParam = params.get('difficulty');
     const searchParam = params.get('search');
+    const isExplicitLeetCode = viewParam === 'leetcode' ||
+      window.location.pathname.endsWith('/leetcode') ||
+      window.location.pathname.endsWith('/problems') ||
+      (levelParam !== null && viewParam !== 'lesson');
+    const leetcodeTopicParam = params.get('leetcodeTopic') || (isExplicitLeetCode ? topicParam : null);
 
     if (tabParam === 'questions' || tabParam === 'concept') {
       activeTab = tabParam;
@@ -498,21 +581,23 @@
       activeTab = 'concept';
     }
 
-    // Explicit request for LeetCode Practice page (e.g. ?view=leetcode)
-    if (viewParam === 'leetcode' || window.location.pathname.endsWith('/leetcode')) {
-      if (!authState.isLoggedIn) {
-        pendingAction = { type: 'open_leetcode', topicFilter: leetcodeTopicParam || 'all' };
-        openLoginModal('Log in with Google to access LeetCode Practice Problems');
-        showToast('Please log in to access LeetCode Practice Problems');
-        const defaultTopicId = (topicsData && topicsData.length > 0) ? topicsData[0].id : 'what-is-dsa';
-        currentView = 'lesson';
-        currentTopicId = defaultTopicId;
-        updateRouterState('lesson', defaultTopicId, activeTab, false);
-        return;
-      }
+    // Explicit request for LeetCode Practice page (e.g. ?view=leetcode, /problems, ?level=2)
+    if (isExplicitLeetCode) {
       currentView = 'leetcode';
       currentTopicId = null;
-      if (leetcodeTopicParam) leetcodeState.topic = leetcodeTopicParam;
+      if (levelParam) {
+        leetcodeState.level = levelParam;
+        const lvlNum = parseInt(levelParam, 10);
+        if (!isNaN(lvlNum)) leetcodeState.expandedLevels.add(lvlNum);
+      }
+      if (leetcodeTopicParam && leetcodeTopicParam !== 'all') {
+        leetcodeState.topic = leetcodeTopicParam;
+        const foundTopic = topicsData.find(t => t.id === leetcodeTopicParam);
+        if (foundTopic) {
+          leetcodeState.level = foundTopic.level;
+          leetcodeState.expandedLevels.add(foundTopic.level);
+        }
+      }
       if (difficultyParam) leetcodeState.difficulty = difficultyParam;
       if (searchParam) leetcodeState.search = searchParam;
       updateRouterState('leetcode', null, null, pushHistory);
@@ -585,6 +670,28 @@
     window.addEventListener('popstate', () => {
       handleRouteFromUrl(false);
       render();
+    });
+
+    // Proactively refresh access token when user returns to tab after being away
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && authState.isLoggedIn) {
+        const token = authState.accessToken || localStorage.getItem('dsa_access_token');
+        if (token) {
+          try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              const expMs = payload.exp * 1000;
+              // If token expired or expiring in under 10 minutes, refresh proactively now
+              if (Date.now() >= expMs - 10 * 60 * 1000) {
+                refreshAccessToken();
+              }
+            }
+          } catch (e) {
+            refreshAccessToken();
+          }
+        }
+      }
     });
 
     // Parse route from current URL and render initial view
@@ -1365,11 +1472,60 @@
         `;
       }
 
+      // Format Worked Example Title
+      const titleHtml = content.workedExample.title ? `
+        <h3 class="worked-example__title" style="font-size:1.02rem; font-weight:700; color:var(--text-primary); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+          ${SVG_ICONS.code || ''} ${escapeHtml(content.workedExample.title)}
+        </h3>
+      ` : '';
+
+      // Format Body Content (Clean code block or composite/prose)
+      const rawText = content.workedExample.primitiveText || '';
+      let bodyHtml = '';
+      if (rawText) {
+        const trimmed = rawText.trim();
+        if (trimmed.startsWith('<code>') && trimmed.endsWith('</code>')) {
+          let inner = trimmed.slice(6, -7).trim();
+          inner = inner.replace(/<br\s*[\/]?>/gi, '\n');
+          bodyHtml = `<pre class="code-block" style="margin-bottom:14px;"><code>${inner}</code></pre>`;
+        } else if (trimmed.includes('<code>')) {
+          let replaced = trimmed.replace(/<code>([\s\S]*?)<\/code>/gi, (match, inner) => {
+            const codeLines = inner.replace(/<br\s*[\/]?>/gi, '\n').trim();
+            return `<pre class="code-block" style="margin:10px 0 14px 0;"><code>${codeLines}</code></pre>`;
+          });
+          replaced = replaced.replace(/(<br\s*[\/]?>\s*)+<pre/gi, '<pre');
+          replaced = replaced.replace(/<\/pre>(\s*<br\s*[\/]?>)+/gi, '</pre>');
+          bodyHtml = `<div class="worked-example-composite" style="font-size:0.95rem; line-height:1.65;">${replaced}</div>`;
+        } else if (trimmed.startsWith('//') || trimmed.includes('\n//')) {
+          const codeLines = trimmed.replace(/<br\s*[\/]?>/gi, '\n');
+          bodyHtml = `<pre class="code-block" style="margin-bottom:14px;"><code>${codeLines}</code></pre>`;
+        } else {
+          bodyHtml = `<p class="worked-example-prose" style="font-size:0.95rem; line-height:1.65; color:var(--text-primary); margin-bottom:12px;">${rawText}</p>`;
+        }
+      }
+
+      // Format Key Takeaway / Reference Text Callout Box
+      let refHtml = '';
+      if (content.workedExample.referenceText) {
+        refHtml = `
+          <div class="callout-box callout-box--tip" style="margin-top:14px; background:var(--bg-surface); border:1px solid var(--border-default); border-left:4px solid var(--accent-primary, #6366F1); border-radius:8px; padding:12px 16px;">
+            <div style="font-weight:600; font-size:0.88rem; color:var(--accent-primary, #6366F1); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <iconify-icon icon="lucide:lightbulb" width="15" height="15"></iconify-icon>
+              <span>Key Takeaway</span>
+            </div>
+            <div style="font-size:0.92rem; color:var(--text-secondary); line-height:1.55;">
+              ${content.workedExample.referenceText}
+            </div>
+          </div>
+        `;
+      }
+
       workedSec.innerHTML = `
         <h2 class="lesson-section__title">${sectionCount++}. Worked Example</h2>
         <div class="lesson-section__body">
-          <p>${content.workedExample.primitiveText || content.workedExample.title}</p>
-          ${content.workedExample.referenceText ? `<p>${content.workedExample.referenceText}</p>` : ''}
+          ${titleHtml}
+          ${bodyHtml}
+          ${refHtml}
           ${selfCheckHtml}
         </div>
       `;
@@ -4883,6 +5039,7 @@ for (let i = 1; i <= 3; i++) {
       localStorage.setItem('dsa_user', JSON.stringify(data.user));
       localStorage.setItem('dsa_has_session', 'true');
       sessionStorage.setItem('dsa_access_token', data.accessToken);
+      scheduleSilentRefresh(data.expiresIn || 3600);
       renderHeaderAuthUI();
       closeLoginModal();
       showToast(`Signed in as ${data.user.email}`);
@@ -4909,93 +5066,591 @@ for (let i = 1; i <= 3; i++) {
   }
 
   /* ────────────────────────────────────────────
-     LEETCODE PROBLEMS PAGE RENDERER
+     LEETCODE PROBLEMS PAGE & ROADMAP RENDERER
   ──────────────────────────────────────────── */
+  let roadmapMemo = null;
+  let lastRoadmapCacheKey = '';
+
+  function computeRoadmapData() {
+    const problems = leetcodeState.allProblems || [];
+    const solvedCount = solvedProblems.size;
+    const cacheKey = `${problems.length}_${solvedCount}_${authState.isLoggedIn}_${leetcodeState.solvedLoading}`;
+    if (roadmapMemo && lastRoadmapCacheKey === cacheKey) {
+      return roadmapMemo;
+    }
+
+    const topicProblemsMap = {};
+    const topicSolvedMap = {};
+    topicsData.forEach(t => {
+      topicProblemsMap[t.id] = [];
+      topicSolvedMap[t.id] = 0;
+    });
+
+    problems.forEach(p => {
+      const isSolved = solvedProblems.has(p.slug);
+      (p.topics || []).forEach(tid => {
+        if (topicProblemsMap[tid]) {
+          topicProblemsMap[tid].push(p);
+          if (isSolved) {
+            topicSolvedMap[tid]++;
+          }
+        }
+      });
+    });
+
+    const levelMetaList = [
+      { level: 1, title: 'Foundations' },
+      { level: 2, title: 'Linear Data Structures' },
+      { level: 3, title: 'Searching & Sorting' },
+      { level: 4, title: 'Hashing' },
+      { level: 5, title: 'Trees' },
+      { level: 6, title: 'Graphs' },
+      { level: 7, title: 'Algorithmic Patterns' }
+    ];
+
+    const levels = levelMetaList.map(lvlMeta => {
+      const lvlTopics = topicsData.filter(t => t.level === lvlMeta.level).sort((a, b) => a.order - b.order);
+      const lvlTopicIds = new Set(lvlTopics.map(t => t.id));
+
+      const distinctLevelProblems = problems.filter(p => Array.isArray(p.topics) && p.topics.some(tid => lvlTopicIds.has(tid)));
+      const totalLevelProblems = distinctLevelProblems.length;
+      const solvedLevelProblems = distinctLevelProblems.filter(p => solvedProblems.has(p.slug)).length;
+
+      let state = 'not_started';
+      if (totalLevelProblems === 0) {
+        state = 'empty';
+      } else if (solvedLevelProblems === totalLevelProblems) {
+        state = 'completed';
+      } else if (solvedLevelProblems > 0) {
+        state = 'in_progress';
+      }
+
+      const topics = lvlTopics.map(t => {
+        const tProblems = topicProblemsMap[t.id] || [];
+        const tTotal = tProblems.length;
+        const tSolved = topicSolvedMap[t.id] || 0;
+        let tState = 'not_started';
+        if (tTotal === 0) tState = 'empty';
+        else if (tSolved === tTotal) tState = 'completed';
+        else if (tSolved > 0) tState = 'in_progress';
+
+        return {
+          id: t.id,
+          title: t.title,
+          order: t.order,
+          total: tTotal,
+          solved: tSolved,
+          state: tState
+        };
+      });
+
+      return {
+        level: lvlMeta.level,
+        title: lvlMeta.title,
+        displayName: `Level ${lvlMeta.level} — ${lvlMeta.title}`,
+        total: totalLevelProblems,
+        solved: solvedLevelProblems,
+        state,
+        topics
+      };
+    });
+
+    const totalDistinct = problems.length;
+    const totalDistinctSolved = problems.filter(p => solvedProblems.has(p.slug)).length;
+
+    roadmapMemo = {
+      levels,
+      total: totalDistinct,
+      solved: totalDistinctSolved,
+      overallPct: totalDistinct > 0 ? Math.round((totalDistinctSolved / totalDistinct) * 100) : 0
+    };
+    lastRoadmapCacheKey = cacheKey;
+    return roadmapMemo;
+  }
+
+  function applyFiltersAndSort() {
+    let list = [...(leetcodeState.allProblems || [])];
+
+    // Filter by Level
+    if (leetcodeState.level && leetcodeState.level !== 'all') {
+      const lvlNum = parseInt(leetcodeState.level, 10);
+      const lvlTopicIds = new Set(topicsData.filter(t => t.level === lvlNum).map(t => t.id));
+      list = list.filter(p => Array.isArray(p.topics) && p.topics.some(tid => lvlTopicIds.has(tid)));
+    }
+
+    // Filter by Topic
+    if (leetcodeState.topic && leetcodeState.topic !== 'all') {
+      list = list.filter(p => Array.isArray(p.topics) && p.topics.includes(leetcodeState.topic));
+    }
+
+    // Filter by Difficulty
+    if (leetcodeState.difficulty && leetcodeState.difficulty !== 'all') {
+      list = list.filter(p => p.difficulty && p.difficulty.toLowerCase() === leetcodeState.difficulty.toLowerCase());
+    }
+
+    // Filter by Search Query
+    if (leetcodeState.search && leetcodeState.search.trim()) {
+      const q = leetcodeState.search.trim().toLowerCase();
+      list = list.filter(p => {
+        const titleMatch = p.title && p.title.toLowerCase().includes(q);
+        const idMatch = p.leetcode_id && String(p.leetcode_id).includes(q);
+        const descMatch = (p.description_short && p.description_short.toLowerCase().includes(q)) ||
+                          (p.learning_note && p.learning_note.toLowerCase().includes(q));
+        const tagMatch = p.tags && p.tags.some(t => t.toLowerCase().includes(q));
+        return titleMatch || idMatch || descMatch || tagMatch;
+      });
+    }
+
+    // Order: Easier to Harder (Easy -> Medium -> Hard)
+    // Preserving existing curriculum or roadmap order inside each difficulty
+    const diffWeights = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
+    list.sort((a, b) => {
+      const weightA = diffWeights[a.difficulty] || 99;
+      const weightB = diffWeights[b.difficulty] || 99;
+      if (weightA !== weightB) return weightA - weightB;
+      const orderA = a.sort_order !== undefined ? a.sort_order : (a.order !== undefined ? a.order : 0);
+      const orderB = b.sort_order !== undefined ? b.sort_order : (b.order !== undefined ? b.order : 0);
+      return orderA - orderB;
+    });
+
+    leetcodeState.problems = list;
+    return list;
+  }
+
   async function fetchLeetCodeProblems() {
+    if (leetcodeState.allProblems && leetcodeState.allProblems.length > 0) {
+      applyFiltersAndSort();
+      return;
+    }
+
     leetcodeState.loading = true;
     leetcodeState.error = null;
 
     try {
-      const queryParams = new URLSearchParams();
-      if (leetcodeState.topic && leetcodeState.topic !== 'all') queryParams.set('topic', leetcodeState.topic);
-      if (leetcodeState.difficulty && leetcodeState.difficulty !== 'all') queryParams.set('difficulty', leetcodeState.difficulty);
-      if (leetcodeState.tag && leetcodeState.tag !== 'all') queryParams.set('tag', leetcodeState.tag);
-      if (leetcodeState.search && leetcodeState.search.trim()) queryParams.set('search', leetcodeState.search.trim());
+      let data = null;
+      try {
+        const res = await fetch(`${API_BASE}/leetcode/problems`);
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (e) {
+        console.warn('API /leetcode/problems failed, trying fallback JSON:', e.message);
+      }
 
-      const url = `${API_BASE}/leetcode/problems?${queryParams.toString()}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      leetcodeState.problems = data.problems || [];
-      leetcodeState.total = data.total || 0;
-      if (data.tags && Array.isArray(data.tags)) {
-        leetcodeState.tags = data.tags;
+      if (!data || !data.problems || data.problems.length === 0) {
+        const fallbackRes = await fetch('data/leetcode_problems.json');
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          data = {
+            problems: fallbackData.problems || [],
+            total: (fallbackData.problems || []).length
+          };
+        }
       }
-      if (data.topicCounts) {
-        leetcodeState.topicCounts = data.topicCounts;
-      }
-      if (data.diffCounts) {
-        leetcodeState.diffCounts = data.diffCounts;
+
+      if (data && data.problems && Array.isArray(data.problems)) {
+        leetcodeState.allProblems = data.problems;
+        leetcodeState.total = data.total || data.problems.length;
+        if (data.tags) leetcodeState.tags = data.tags;
+        if (data.topicCounts) leetcodeState.topicCounts = data.topicCounts;
+        if (data.diffCounts) leetcodeState.diffCounts = data.diffCounts;
+      } else {
+        throw new Error('Failed to load LeetCode problems.');
       }
     } catch (err) {
-      console.warn('LeetCode API fetch error:', err.message);
+      console.warn('LeetCode fetch error:', err.message);
       leetcodeState.error = err.message;
     } finally {
       leetcodeState.loading = false;
+      applyFiltersAndSort();
     }
   }
 
-  function openLeetCodePage(topicFilter = 'all') {
-    if (!authState.isLoggedIn) {
-      pendingAction = { type: 'open_leetcode', topicFilter };
-      openLoginModal('Log in with Google to access LeetCode Practice Problems');
-      showToast('Please log in to access LeetCode Practice Problems');
-      return;
-    }
+  function openLeetCodePage(topicFilter = 'all', levelFilter = 'all') {
     currentView = 'leetcode';
     currentTopicId = null;
     leetcodeState.topic = topicFilter;
+    leetcodeState.level = levelFilter;
+    if (topicFilter !== 'all') {
+      const foundTopic = topicsData.find(t => t.id === topicFilter);
+      if (foundTopic) {
+        leetcodeState.level = foundTopic.level;
+        leetcodeState.expandedLevels.add(foundTopic.level);
+      }
+    } else if (levelFilter !== 'all') {
+      const lvlNum = parseInt(levelFilter, 10);
+      if (!isNaN(lvlNum)) leetcodeState.expandedLevels.add(lvlNum);
+    }
     leetcodeState.page = 1;
     updateRouterState('leetcode', null, null, true);
     render();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function updateFilterControlsUI() {
-    const topicSelect = document.getElementById('leetcode-topic-select');
-    if (topicSelect && leetcodeState.topicCounts && Object.keys(leetcodeState.topicCounts).length > 0) {
-      const totalCount = leetcodeState.total || 221;
-      const topicOptions = [
-        `<option value="all" ${leetcodeState.topic === 'all' ? 'selected' : ''}>All Topics (${totalCount})</option>`,
-        ...topicsData.map(t => {
-          const unlocked = isTopicUnlocked(t.id);
-          const count = leetcodeState.topicCounts[t.id] || 0;
-          if (unlocked) {
-            return `<option value="${t.id}" ${leetcodeState.topic === t.id ? 'selected' : ''}>${t.order}. ${escapeHtml(t.title)} (${count})</option>`;
-          } else {
-            return `<option value="${t.id}" disabled style="color:var(--text-muted); opacity:0.55;">🔒 ${t.order}. ${escapeHtml(t.title)} (${count}) (Coming Soon)</option>`;
-          }
-        })
-      ].join('');
-      topicSelect.innerHTML = topicOptions;
+  function generateTopicSelectOptionsHTML(roadmapData) {
+    const isAllSelected = (leetcodeState.level === 'all' && leetcodeState.topic === 'all');
+    let html = `<option value="all" ${isAllSelected ? 'selected' : ''}>All Levels & Topics (${roadmapData.total})</option>`;
+
+    roadmapData.levels.forEach(lvl => {
+      const isLevelSelected = (leetcodeState.level == lvl.level && leetcodeState.topic === 'all');
+      html += `<optgroup label="${escapeHtml(lvl.displayName)} (${lvl.total})">`;
+      html += `<option value="level-${lvl.level}" ${isLevelSelected ? 'selected' : ''}>All Level ${lvl.level} Problems (${lvl.total})</option>`;
+      lvl.topics.forEach(t => {
+        const isTopicSelected = (leetcodeState.topic === t.id);
+        const countLabel = t.total === 0 ? 'No problems yet' : t.total;
+        html += `<option value="${escapeHtml(t.id)}" ${isTopicSelected ? 'selected' : ''}>${t.order}. ${escapeHtml(t.title)} (${countLabel})</option>`;
+      });
+      html += `</optgroup>`;
+    });
+
+    return html;
+  }
+
+  function renderRoadmapTreeHTML(roadmapData, isMobile = false) {
+    const isLoggedIn = authState.isLoggedIn;
+    const isLoading = leetcodeState.solvedLoading;
+    const prefix = isMobile ? 'lc-mob-' : 'lc-desk-';
+
+    let allSummaryCount = '';
+    let allProgressBar = '';
+    if (!isLoggedIn) {
+      allSummaryCount = `${roadmapData.total} problems`;
+      allProgressBar = `<div class="lc-roadmap-progress-bar"><div class="lc-roadmap-progress-bar__fill" style="width:0%"></div></div>`;
+    } else if (isLoading) {
+      allSummaryCount = `<span class="lc-skeleton-pill"></span>`;
+      allProgressBar = `<div class="lc-roadmap-progress-bar lc-roadmap-progress-bar--loading"></div>`;
+    } else {
+      allSummaryCount = `${roadmapData.solved} / ${roadmapData.total} solved`;
+      allProgressBar = `
+        <div class="lc-roadmap-progress-bar">
+          <div class="lc-roadmap-progress-bar__fill" style="width:${roadmapData.overallPct}%"></div>
+        </div>
+      `;
     }
 
-    // Update Difficulty Pills
+    const isAllActive = (leetcodeState.level === 'all' && leetcodeState.topic === 'all');
+
+    const levelsHTML = roadmapData.levels.map(lvl => {
+      const isLevelActive = (leetcodeState.level == lvl.level && leetcodeState.topic === 'all');
+      const isExpanded = leetcodeState.expandedLevels.has(lvl.level);
+
+      let levelCountText = '';
+      let statePillHTML = '';
+      let progressBarHTML = '';
+      let pctBadge = '';
+
+      if (lvl.total === 0) {
+        levelCountText = '<span class="lc-count-empty">No problems yet</span>';
+        statePillHTML = '<span class="lc-state-pill lc-state-pill--empty">Empty</span>';
+        progressBarHTML = `<div class="lc-roadmap-progress-bar"><div class="lc-roadmap-progress-bar__fill" style="width:0%"></div></div>`;
+      } else if (!isLoggedIn) {
+        levelCountText = `<span>${lvl.total} problems</span>`;
+        statePillHTML = `<span class="lc-state-pill lc-state-pill--guest">Track progress</span>`;
+        progressBarHTML = `<div class="lc-roadmap-progress-bar"><div class="lc-roadmap-progress-bar__fill" style="width:0%"></div></div>`;
+      } else if (isLoading) {
+        levelCountText = `<span class="lc-skeleton-pill"></span>`;
+        statePillHTML = `<span class="lc-skeleton-pill" style="width:60px;"></span>`;
+        progressBarHTML = `<div class="lc-roadmap-progress-bar lc-roadmap-progress-bar--loading"></div>`;
+      } else {
+        const pct = lvl.total > 0 ? Math.round((lvl.solved / lvl.total) * 100) : 0;
+        levelCountText = `<span><strong>${lvl.solved}</strong> / ${lvl.total} solved</span>`;
+        pctBadge = `<span class="lc-level-pct">${pct}%</span>`;
+
+        let stateClass = 'not-started';
+        let stateLabel = 'Not started';
+        if (lvl.state === 'completed') {
+          stateClass = 'completed';
+          stateLabel = 'Completed';
+        } else if (lvl.state === 'in_progress') {
+          stateClass = 'in-progress';
+          stateLabel = 'In progress';
+        }
+        statePillHTML = `<span class="lc-state-pill lc-state-pill--${stateClass}">${stateLabel}</span>`;
+        progressBarHTML = `
+          <div class="lc-roadmap-progress-bar">
+            <div class="lc-roadmap-progress-bar__fill lc-roadmap-progress-bar__fill--${stateClass}" style="width:${pct}%"></div>
+          </div>
+        `;
+      }
+
+      const topicsHTML = lvl.topics.map(t => {
+        const isTopicActive = (leetcodeState.topic === t.id);
+        let topicCountText = '';
+        let dotClass = 'dot--not-started';
+
+        if (t.total === 0) {
+          topicCountText = 'No problems yet';
+          dotClass = 'dot--empty';
+        } else if (!isLoggedIn) {
+          topicCountText = `${t.total} problems`;
+          dotClass = 'dot--guest';
+        } else if (isLoading) {
+          topicCountText = '<span class="lc-skeleton-pill" style="width:40px;"></span>';
+        } else {
+          topicCountText = `${t.solved} / ${t.total}`;
+          if (t.state === 'completed') dotClass = 'dot--completed';
+          else if (t.state === 'in_progress') dotClass = 'dot--in-progress';
+        }
+
+        return `
+          <button type="button" class="lc-roadmap-topic-btn ${isTopicActive ? 'active' : ''}" data-topic-id="${escapeHtml(t.id)}" data-level-id="${lvl.level}">
+            <div class="lc-roadmap-topic-btn__left">
+              <span class="lc-topic-dot ${dotClass}"></span>
+              <span class="lc-roadmap-topic-title">${t.order}. ${escapeHtml(t.title)}</span>
+            </div>
+            <span class="lc-roadmap-topic-count">${topicCountText}</span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="lc-roadmap-level ${isLevelActive ? 'lc-roadmap-level--active' : ''} ${isExpanded ? 'lc-roadmap-level--expanded' : ''}" data-level-id="${lvl.level}">
+          <div class="lc-roadmap-level__header" data-level-id="${lvl.level}">
+            <div class="lc-roadmap-level__header-top">
+              <div class="lc-roadmap-level__title-group">
+                <span class="lc-roadmap-level__badge">L${lvl.level}</span>
+                <span class="lc-roadmap-level__title">${escapeHtml(lvl.displayName)}</span>
+              </div>
+              <div class="lc-roadmap-level__right">
+                ${statePillHTML}
+                <button type="button" class="lc-roadmap-level__chevron-btn" data-toggle-level="${lvl.level}" aria-label="Toggle Level ${lvl.level} topics">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lc-chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="lc-roadmap-level__progress-meta">
+              <span class="lc-roadmap-level__meta-count">${levelCountText}</span>
+              ${pctBadge}
+            </div>
+            ${progressBarHTML}
+          </div>
+
+          <div class="lc-roadmap-topics ${isExpanded ? 'open' : ''}" id="${prefix}topics-${lvl.level}">
+            ${topicsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="lc-roadmap-header">
+        <div class="lc-roadmap-header__title-row">
+          <svg class="lc-roadmap-title-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          <span class="lc-roadmap-header__title">Curriculum Roadmap</span>
+        </div>
+        <p class="lc-roadmap-header__desc">Progress from fundamental concepts to advanced patterns.</p>
+
+        <button type="button" class="lc-roadmap-all-btn ${isAllActive ? 'active' : ''}" data-action="all-curriculum">
+          <div class="lc-roadmap-all-btn__top">
+            <span class="lc-roadmap-all-btn__title">All Curriculum</span>
+            <span class="lc-roadmap-all-btn__count">${allSummaryCount}</span>
+          </div>
+          ${allProgressBar}
+        </button>
+      </div>
+
+      <div class="lc-roadmap-tree">
+        ${levelsHTML}
+      </div>
+    `;
+  }
+
+  function updateRoadmapUI() {
+    const roadmapData = computeRoadmapData();
+
+    // 1. Update Desktop Rail
+    const rail = document.getElementById('lc-roadmap-rail');
+    if (rail) {
+      rail.innerHTML = renderRoadmapTreeHTML(roadmapData, false);
+      bindRoadmapEvents(rail);
+    }
+
+    // 2. Update Mobile Drawer
+    const drawer = document.getElementById('lc-roadmap-mobile-drawer');
+    if (drawer) {
+      drawer.innerHTML = renderRoadmapTreeHTML(roadmapData, true);
+      bindRoadmapEvents(drawer);
+    }
+
+    // 3. Update Mobile Summary Header Bar
+    const summaryTitle = document.getElementById('lc-mobile-current-filter');
+    const summaryStatePill = document.getElementById('lc-mobile-state-pill');
+    if (summaryTitle && summaryStatePill) {
+      const isLoggedIn = authState.isLoggedIn;
+      if (leetcodeState.topic && leetcodeState.topic !== 'all') {
+        const tObj = topicsData.find(t => t.id === leetcodeState.topic);
+        const tTitle = tObj ? tObj.title : leetcodeState.topic;
+        const tData = roadmapData.levels.flatMap(l => l.topics).find(t => t.id === leetcodeState.topic);
+        if (!isLoggedIn) {
+          summaryTitle.textContent = `${tTitle} · ${tData ? tData.total : 0} problems`;
+          summaryStatePill.className = 'lc-state-pill lc-state-pill--guest';
+          summaryStatePill.textContent = 'Track progress';
+        } else {
+          const solved = tData ? tData.solved : 0;
+          const total = tData ? tData.total : 0;
+          summaryTitle.textContent = `${tTitle} · ${solved} / ${total} solved`;
+          let stateClass = tData ? tData.state.replace('_', '-') : 'not-started';
+          let stateLabel = stateClass === 'completed' ? 'Completed' : (stateClass === 'in-progress' ? 'In progress' : 'Not started');
+          summaryStatePill.className = `lc-state-pill lc-state-pill--${stateClass}`;
+          summaryStatePill.textContent = stateLabel;
+        }
+      } else if (leetcodeState.level && leetcodeState.level !== 'all') {
+        const lvlData = roadmapData.levels.find(l => l.level == leetcodeState.level);
+        if (lvlData) {
+          if (!isLoggedIn) {
+            summaryTitle.textContent = `${lvlData.displayName} · ${lvlData.total} problems`;
+            summaryStatePill.className = 'lc-state-pill lc-state-pill--guest';
+            summaryStatePill.textContent = 'Track progress';
+          } else {
+            summaryTitle.textContent = `${lvlData.displayName} · ${lvlData.solved} / ${lvlData.total} solved`;
+            let stateClass = lvlData.state.replace('_', '-') || 'not-started';
+            let stateLabel = stateClass === 'completed' ? 'Completed' : (stateClass === 'in-progress' ? 'In progress' : 'Not started');
+            summaryStatePill.className = `lc-state-pill lc-state-pill--${stateClass}`;
+            summaryStatePill.textContent = stateLabel;
+          }
+        }
+      } else {
+        if (!isLoggedIn) {
+          summaryTitle.textContent = `All Curriculum · ${roadmapData.total} problems`;
+          summaryStatePill.className = 'lc-state-pill lc-state-pill--guest';
+          summaryStatePill.textContent = 'Track progress';
+        } else {
+          summaryTitle.textContent = `All Curriculum · ${roadmapData.solved} / ${roadmapData.total} solved`;
+          let stateClass = roadmapData.solved === roadmapData.total && roadmapData.total > 0 ? 'completed' : (roadmapData.solved > 0 ? 'in-progress' : 'not-started');
+          let stateLabel = stateClass === 'completed' ? 'Completed' : (stateClass === 'in-progress' ? 'In progress' : 'Not started');
+          summaryStatePill.className = `lc-state-pill lc-state-pill--${stateClass}`;
+          summaryStatePill.textContent = stateLabel;
+        }
+      }
+    }
+
+    // 4. Update Topic Dropdown Options
+    const topicSelect = document.getElementById('leetcode-topic-select');
+    if (topicSelect) {
+      topicSelect.innerHTML = generateTopicSelectOptionsHTML(roadmapData);
+      if (leetcodeState.topic && leetcodeState.topic !== 'all') {
+        topicSelect.value = leetcodeState.topic;
+      } else if (leetcodeState.level && leetcodeState.level !== 'all') {
+        topicSelect.value = `level-${leetcodeState.level}`;
+      } else {
+        topicSelect.value = 'all';
+      }
+    }
+
+    // 5. Update Difficulty Pills
     const pills = document.querySelectorAll('.leetcode-diff-pill');
-    if (pills && pills.length && leetcodeState.diffCounts) {
+    if (pills && pills.length) {
+      const activeProblems = leetcodeState.problems || [];
+      const easyCount = activeProblems.filter(p => p.difficulty === 'Easy').length;
+      const medCount = activeProblems.filter(p => p.difficulty === 'Medium').length;
+      const hardCount = activeProblems.filter(p => p.difficulty === 'Hard').length;
       pills.forEach(pill => {
         const diff = pill.getAttribute('data-diff');
-        if (diff === 'all') {
-          pill.textContent = `All (${leetcodeState.total || 221})`;
-        } else if (diff === 'Easy') {
-          pill.textContent = `Easy (${leetcodeState.diffCounts.Easy || 0})`;
-        } else if (diff === 'Medium') {
-          pill.textContent = `Medium (${leetcodeState.diffCounts.Medium || 0})`;
-        } else if (diff === 'Hard') {
-          pill.textContent = `Hard (${leetcodeState.diffCounts.Hard || 0})`;
-        }
+        if (diff === 'all') pill.textContent = `All (${activeProblems.length})`;
+        else if (diff === 'Easy') pill.textContent = `Easy (${easyCount})`;
+        else if (diff === 'Medium') pill.textContent = `Medium (${medCount})`;
+        else if (diff === 'Hard') pill.textContent = `Hard (${hardCount})`;
       });
     }
+  }
+
+  function bindRoadmapEvents(container) {
+    if (!container) return;
+
+    // "All Curriculum" Click
+    container.querySelectorAll('[data-action="all-curriculum"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        leetcodeState.level = 'all';
+        leetcodeState.topic = 'all';
+        leetcodeState.page = 1;
+        updateRouterState('leetcode', null, null, false);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        const grid = document.getElementById('leetcode-grid-container');
+        if (grid) renderCardsWithPagination(grid);
+        closeMobileRoadmapDrawer();
+      });
+    });
+
+    // Level Header Click (Filter to that level)
+    container.querySelectorAll('.lc-roadmap-level__header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        // If clicking chevron button directly, handle toggle only
+        if (e.target.closest('.lc-roadmap-level__chevron-btn')) {
+          e.stopPropagation();
+          const lvl = parseInt(header.getAttribute('data-level-id'), 10);
+          if (leetcodeState.expandedLevels.has(lvl)) {
+            leetcodeState.expandedLevels.delete(lvl);
+          } else {
+            leetcodeState.expandedLevels.add(lvl);
+          }
+          updateRoadmapUI();
+          return;
+        }
+
+        e.preventDefault();
+        const lvl = parseInt(header.getAttribute('data-level-id'), 10);
+        leetcodeState.level = lvl;
+        leetcodeState.topic = 'all';
+        leetcodeState.expandedLevels.add(lvl);
+        leetcodeState.page = 1;
+        updateRouterState('leetcode', null, null, false);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        const grid = document.getElementById('leetcode-grid-container');
+        if (grid) renderCardsWithPagination(grid);
+        closeMobileRoadmapDrawer();
+      });
+    });
+
+    // Topic Click (Filter to that topic)
+    container.querySelectorAll('.lc-roadmap-topic-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tid = btn.getAttribute('data-topic-id');
+        const lvl = parseInt(btn.getAttribute('data-level-id'), 10);
+        leetcodeState.topic = tid;
+        leetcodeState.level = lvl;
+        leetcodeState.expandedLevels.add(lvl);
+        leetcodeState.page = 1;
+        updateRouterState('leetcode', null, null, false);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        const grid = document.getElementById('leetcode-grid-container');
+        if (grid) renderCardsWithPagination(grid);
+        closeMobileRoadmapDrawer();
+      });
+    });
+  }
+
+  function closeMobileRoadmapDrawer() {
+    const summary = document.getElementById('lc-roadmap-mobile-toggle');
+    const drawer = document.getElementById('lc-roadmap-mobile-drawer');
+    if (summary && drawer) {
+      summary.classList.remove('open');
+      drawer.classList.remove('open');
+      leetcodeState.mobileRoadmapOpen = false;
+    }
+  }
+
+  function resetAllLeetCodeFilters(gridContainer) {
+    leetcodeState.level = 'all';
+    leetcodeState.topic = 'all';
+    leetcodeState.difficulty = 'all';
+    leetcodeState.search = '';
+    leetcodeState.page = 1;
+    const topicSelect = document.getElementById('leetcode-topic-select');
+    if (topicSelect) topicSelect.value = 'all';
+    const searchInput = document.getElementById('leetcode-search-input');
+    if (searchInput) searchInput.value = '';
+    document.querySelectorAll('.leetcode-diff-pill').forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-diff') === 'all');
+    });
+    updateRouterState('leetcode', null, null, false);
+    applyFiltersAndSort();
+    updateRoadmapUI();
+    renderCardsWithPagination(gridContainer);
   }
 
   async function renderLeetCodePage() {
@@ -5018,7 +5673,74 @@ for (let i = 1; i <= 3; i++) {
     `;
     container.appendChild(header);
 
-    // 2. Controls & Search Section
+    // 2. Logged-out Guest Banner (if not logged in)
+    if (!authState.isLoggedIn) {
+      const guestBanner = document.createElement('div');
+      guestBanner.className = 'lc-guest-banner';
+      guestBanner.innerHTML = `
+        <div class="lc-guest-banner__icon">🔒</div>
+        <div class="lc-guest-banner__content">
+          <h4>Track your progress across 221 LeetCode problems</h4>
+          <p>Sign in with Google to mark problems solved, sync your progress across devices, and visualize your mastery through the 7-level roadmap.</p>
+        </div>
+        <button type="button" class="btn btn--primary lc-guest-banner__btn" id="btn-lc-guest-login">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+          <span>Sign In to Track</span>
+        </button>
+      `;
+      container.appendChild(guestBanner);
+
+      const loginBtn = guestBanner.querySelector('#btn-lc-guest-login');
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+          openLoginModal('Log in to track your LeetCode solved problems');
+        });
+      }
+    }
+
+    // 3. Mobile Collapsible Summary Bar (< 960px)
+    const mobileSummary = document.createElement('div');
+    mobileSummary.className = 'lc-roadmap-mobile-summary';
+    mobileSummary.id = 'lc-roadmap-mobile-toggle';
+    mobileSummary.innerHTML = `
+      <div class="lc-roadmap-mobile-summary__left">
+        <span class="lc-roadmap-icon">🗺️</span>
+        <span class="lc-roadmap-mobile-title" id="lc-mobile-current-filter">Curriculum Roadmap</span>
+      </div>
+      <div class="lc-roadmap-mobile-summary__right">
+        <span class="lc-state-pill lc-state-pill--guest" id="lc-mobile-state-pill">Roadmap</span>
+        <span class="lc-roadmap-mobile-chevron" id="lc-mobile-chevron">▼</span>
+      </div>
+    `;
+    container.appendChild(mobileSummary);
+
+    // 4. Mobile Expandable Roadmap Drawer
+    const mobileDrawer = document.createElement('div');
+    mobileDrawer.className = 'lc-roadmap-mobile-drawer';
+    mobileDrawer.id = 'lc-roadmap-mobile-drawer';
+    container.appendChild(mobileDrawer);
+
+    mobileSummary.addEventListener('click', () => {
+      leetcodeState.mobileRoadmapOpen = !leetcodeState.mobileRoadmapOpen;
+      mobileSummary.classList.toggle('open', leetcodeState.mobileRoadmapOpen);
+      mobileDrawer.classList.toggle('open', leetcodeState.mobileRoadmapOpen);
+    });
+
+    // 5. Two-Column Layout (Desktop Left Rail + Main Content)
+    const layout = document.createElement('div');
+    layout.className = 'lc-layout';
+
+    // Left Rail
+    const rail = document.createElement('aside');
+    rail.className = 'lc-roadmap-rail';
+    rail.id = 'lc-roadmap-rail';
+    layout.appendChild(rail);
+
+    // Main Content
+    const mainContent = document.createElement('main');
+    mainContent.className = 'lc-main-content';
+
+    // Controls Container
     const controls = document.createElement('div');
     controls.className = 'leetcode-controls';
 
@@ -5028,7 +5750,7 @@ for (let i = 1; i <= 3; i++) {
     searchWrapper.innerHTML = `
       <span class="leetcode-search-icon">🔎</span>
       <input type="text" id="leetcode-search-input" class="leetcode-search-input" placeholder="Search LeetCode problems by name, # number, or keyword..." value="${escapeHtml(leetcodeState.search || '')}" />
-      ${leetcodeState.search ? '<button id="leetcode-search-clear" class="leetcode-search-clear">✕</button>' : ''}
+      ${leetcodeState.search ? '<button type="button" id="leetcode-search-clear" class="leetcode-search-clear">✕</button>' : ''}
     `;
     controls.appendChild(searchWrapper);
 
@@ -5039,26 +5761,10 @@ for (let i = 1; i <= 3; i++) {
     // Topic Filter Select
     const topicFilterDiv = document.createElement('div');
     topicFilterDiv.className = 'leetcode-filter-group';
-
-    const initialTotal = leetcodeState.total || 221;
-    const topicSelectHTML = [
-      `<option value="all" ${leetcodeState.topic === 'all' ? 'selected' : ''}>All Topics (${initialTotal})</option>`,
-      ...topicsData.map(t => {
-        const unlocked = isTopicUnlocked(t.id);
-        const count = (leetcodeState.topicCounts && leetcodeState.topicCounts[t.id]) ? leetcodeState.topicCounts[t.id] : '';
-        const countStr = count !== '' ? ` (${count})` : '';
-        if (unlocked) {
-          return `<option value="${t.id}" ${leetcodeState.topic === t.id ? 'selected' : ''}>${t.order}. ${escapeHtml(t.title)}${countStr}</option>`;
-        } else {
-          return `<option value="${t.id}" disabled style="color:var(--text-muted); opacity:0.55;">🔒 ${t.order}. ${escapeHtml(t.title)}${countStr} (Coming Soon)</option>`;
-        }
-      })
-    ].join('');
-
     topicFilterDiv.innerHTML = `
-      <label class="leetcode-filter-label" for="leetcode-topic-select">Topic Filter</label>
+      <label class="leetcode-filter-label" for="leetcode-topic-select">Curriculum & Topic Filter</label>
       <select id="leetcode-topic-select" class="leetcode-select">
-        ${topicSelectHTML}
+        <option value="all">Loading curriculum...</option>
       </select>
     `;
     filterRow.appendChild(topicFilterDiv);
@@ -5068,15 +5774,9 @@ for (let i = 1; i <= 3; i++) {
     difficultyFilterDiv.className = 'leetcode-filter-group';
     const difficulties = ['all', 'Easy', 'Medium', 'Hard'];
     const diffButtonsHTML = difficulties.map(d => {
-      let label = d === 'all' ? `All (${initialTotal})` : d;
-      if (leetcodeState.diffCounts) {
-        if (d === 'Easy' && leetcodeState.diffCounts.Easy) label = `Easy (${leetcodeState.diffCounts.Easy})`;
-        else if (d === 'Medium' && leetcodeState.diffCounts.Medium) label = `Medium (${leetcodeState.diffCounts.Medium})`;
-        else if (d === 'Hard' && leetcodeState.diffCounts.Hard) label = `Hard (${leetcodeState.diffCounts.Hard})`;
-      }
       const isActive = leetcodeState.difficulty.toLowerCase() === d.toLowerCase();
       const colorClass = d === 'Easy' ? 'pill--easy' : (d === 'Medium' ? 'pill--medium' : (d === 'Hard' ? 'pill--hard' : 'pill--all'));
-      return `<button class="leetcode-diff-pill ${colorClass} ${isActive ? 'active' : ''}" data-diff="${d}">${label}</button>`;
+      return `<button type="button" class="leetcode-diff-pill ${colorClass} ${isActive ? 'active' : ''}" data-diff="${d}">${d === 'all' ? 'All' : d}</button>`;
     }).join('');
 
     difficultyFilterDiv.innerHTML = `
@@ -5086,14 +5786,16 @@ for (let i = 1; i <= 3; i++) {
     filterRow.appendChild(difficultyFilterDiv);
 
     controls.appendChild(filterRow);
-    container.appendChild(controls);
+    mainContent.appendChild(controls);
 
-    // 3. Problem Cards Grid Container
+    // Problem Cards Grid Container
     const gridContainer = document.createElement('div');
     gridContainer.className = 'leetcode-grid-container';
     gridContainer.id = 'leetcode-grid-container';
-    container.appendChild(gridContainer);
+    mainContent.appendChild(gridContainer);
 
+    layout.appendChild(mainContent);
+    container.appendChild(layout);
     $main.appendChild(container);
 
     // Bind Search & Filter Events
@@ -5110,8 +5812,10 @@ for (let i = 1; i <= 3; i++) {
           leetcodeState.search = e.target.value;
           leetcodeState.page = 1;
           updateRouterState('leetcode', null, null, false);
-          loadAndRenderCards(gridContainer);
-        }, 300);
+          applyFiltersAndSort();
+          updateRoadmapUI();
+          renderCardsWithPagination(gridContainer);
+        }, 280);
       });
     }
 
@@ -5121,16 +5825,36 @@ for (let i = 1; i <= 3; i++) {
         leetcodeState.page = 1;
         if (searchInput) searchInput.value = '';
         updateRouterState('leetcode', null, null, false);
-        loadAndRenderCards(gridContainer);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        renderCardsWithPagination(gridContainer);
       });
     }
 
     if (topicSelect) {
       topicSelect.addEventListener('change', (e) => {
-        leetcodeState.topic = e.target.value;
+        const val = e.target.value;
+        if (val === 'all') {
+          leetcodeState.level = 'all';
+          leetcodeState.topic = 'all';
+        } else if (val.startsWith('level-')) {
+          const lvl = parseInt(val.replace('level-', ''), 10);
+          leetcodeState.level = lvl;
+          leetcodeState.topic = 'all';
+          leetcodeState.expandedLevels.add(lvl);
+        } else {
+          leetcodeState.topic = val;
+          const foundTopic = topicsData.find(t => t.id === val);
+          if (foundTopic) {
+            leetcodeState.level = foundTopic.level;
+            leetcodeState.expandedLevels.add(foundTopic.level);
+          }
+        }
         leetcodeState.page = 1;
         updateRouterState('leetcode', null, null, false);
-        loadAndRenderCards(gridContainer);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        renderCardsWithPagination(gridContainer);
       });
     }
 
@@ -5141,7 +5865,9 @@ for (let i = 1; i <= 3; i++) {
         leetcodeState.difficulty = pill.getAttribute('data-diff');
         leetcodeState.page = 1;
         updateRouterState('leetcode', null, null, false);
-        loadAndRenderCards(gridContainer);
+        applyFiltersAndSort();
+        updateRoadmapUI();
+        renderCardsWithPagination(gridContainer);
       });
     });
 
@@ -5160,7 +5886,7 @@ for (let i = 1; i <= 3; i++) {
     `;
 
     await fetchLeetCodeProblems();
-    updateFilterControlsUI();
+    updateRoadmapUI();
 
     if (leetcodeState.error) {
       gridContainer.innerHTML = `
@@ -5168,51 +5894,11 @@ for (let i = 1; i <= 3; i++) {
           <div class="leetcode-empty-icon">⚠️</div>
           <h3>Unable to load LeetCode problems</h3>
           <p style="color:var(--text-secondary); margin-top:8px;">${escapeHtml(leetcodeState.error)}</p>
-          <button class="btn btn--primary" id="btn-retry-leetcode" style="margin-top:16px; padding:8px 20px; border-radius:20px;">Retry</button>
+          <button type="button" class="btn btn--primary" id="btn-retry-leetcode" style="margin-top:16px; padding:8px 20px; border-radius:20px;">Retry</button>
         </div>
       `;
       const retryBtn = gridContainer.querySelector('#btn-retry-leetcode');
       if (retryBtn) retryBtn.addEventListener('click', () => loadAndRenderCards(gridContainer));
-      return;
-    }
-
-    const problems = leetcodeState.problems || [];
-
-    if (problems.length === 0) {
-      const selectedTopicObj = topicsData.find(t => t.id === leetcodeState.topic);
-      const topicName = selectedTopicObj ? selectedTopicObj.title : leetcodeState.topic;
-
-      gridContainer.innerHTML = `
-        <div class="leetcode-empty-state">
-          <div class="leetcode-empty-icon">📂</div>
-          <h3>No problems mapped to this topic yet</h3>
-          <p style="color:var(--text-secondary); max-width:480px; margin:8px auto 0 auto; line-height:1.5;">
-            ${leetcodeState.topic !== 'all' ? `No active LeetCode problems found for topic filter <strong>"${escapeHtml(topicName)}"</strong>.` : 'No LeetCode problems match your selected search or filters.'}
-          </p>
-          <button class="btn btn--secondary" id="btn-reset-leetcode-filters" style="margin-top:16px; padding:8px 18px; border-radius:20px; font-weight:600;">
-            Reset All Filters
-          </button>
-        </div>
-      `;
-
-      const resetBtn = gridContainer.querySelector('#btn-reset-leetcode-filters');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          leetcodeState.topic = 'all';
-          leetcodeState.difficulty = 'all';
-          leetcodeState.search = '';
-          leetcodeState.page = 1;
-          const topicSelect = document.getElementById('leetcode-topic-select');
-          if (topicSelect) topicSelect.value = 'all';
-          const searchInput = document.getElementById('leetcode-search-input');
-          if (searchInput) searchInput.value = '';
-          document.querySelectorAll('.leetcode-diff-pill').forEach(p => {
-            p.classList.toggle('active', p.getAttribute('data-diff') === 'all');
-          });
-          updateRouterState('leetcode', null, null, false);
-          loadAndRenderCards(gridContainer);
-        });
-      }
       return;
     }
 
@@ -5223,37 +5909,70 @@ for (let i = 1; i <= 3; i++) {
     const problems = leetcodeState.problems || [];
     const solvedCount = problems.filter(p => solvedProblems.has(p.slug)).length;
     const solvedPct = problems.length > 0 ? Math.round((solvedCount / problems.length) * 100) : 0;
+    const isLoggedIn = authState.isLoggedIn;
 
     // 1. Solved Summary Bar
-    const summaryBar = `
-      <div class="lc-solved-summary" id="lc-solved-summary-bar">
-        <span class="lc-solved-summary__text">
-          <span class="lc-solved-summary__check">✅</span>
-          <span><strong>${solvedCount}</strong> / ${problems.length} solved</span>
-          <span class="lc-solved-summary__pct">${solvedPct}%</span>
-        </span>
-        <div class="lc-solved-summary__bar">
-          <div class="lc-solved-summary__fill" style="width:${solvedPct}%"></div>
+    let summaryBar = '';
+    if (isLoggedIn) {
+      summaryBar = `
+        <div class="lc-solved-summary" id="lc-solved-summary-bar">
+          <span class="lc-solved-summary__text">
+            <span class="lc-solved-summary__check">✅</span>
+            <span><strong>${solvedCount}</strong> / ${problems.length} solved</span>
+            <span class="lc-solved-summary__pct">${solvedPct}%</span>
+          </span>
+          <div class="lc-solved-summary__bar">
+            <div class="lc-solved-summary__fill" style="width:${solvedPct}%"></div>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
     // 2. Active Filter Indicator
-    const hasFilter = (leetcodeState.topic !== 'all') || (leetcodeState.difficulty !== 'all') || (leetcodeState.search && leetcodeState.search.trim().length > 0);
+    const hasFilter = (leetcodeState.level !== 'all') || (leetcodeState.topic !== 'all') || (leetcodeState.difficulty !== 'all') || (leetcodeState.search && leetcodeState.search.trim().length > 0);
     let filterIndicatorHTML = '';
     if (hasFilter) {
-      const topicObj = topicsData.find(t => t.id === leetcodeState.topic);
       const parts = [];
-      if (topicObj) parts.push(`Topic: <strong>${escapeHtml(topicObj.title)}</strong>`);
+      if (leetcodeState.level !== 'all') parts.push(`Level: <strong>Level ${leetcodeState.level}</strong>`);
+      if (leetcodeState.topic !== 'all') {
+        const topicObj = topicsData.find(t => t.id === leetcodeState.topic);
+        if (topicObj) parts.push(`Topic: <strong>${escapeHtml(topicObj.title)}</strong>`);
+      }
       if (leetcodeState.difficulty !== 'all') parts.push(`Difficulty: <strong>${escapeHtml(leetcodeState.difficulty)}</strong>`);
       if (leetcodeState.search && leetcodeState.search.trim()) parts.push(`Search: <strong>"${escapeHtml(leetcodeState.search.trim())}"</strong>`);
 
       filterIndicatorHTML = `
         <div class="leetcode-filter-summary-row">
           <span>Showing <strong>${problems.length}</strong> of ${leetcodeState.total || 221} problems (${parts.join(' | ')})</span>
-          <button class="leetcode-reset-filters-inline" id="btn-inline-reset-filters">Clear all filters</button>
+          <button type="button" class="leetcode-reset-filters-inline" id="btn-inline-reset-filters">Clear all filters</button>
         </div>
       `;
+    }
+
+    if (problems.length === 0) {
+      const selectedTopicObj = topicsData.find(t => t.id === leetcodeState.topic);
+      const topicName = selectedTopicObj ? selectedTopicObj.title : leetcodeState.topic;
+
+      gridContainer.innerHTML = summaryBar + filterIndicatorHTML + `
+        <div class="leetcode-empty-state">
+          <div class="leetcode-empty-icon">📂</div>
+          <h3>No problems mapped to this selection yet</h3>
+          <p style="color:var(--text-secondary); max-width:480px; margin:8px auto 0 auto; line-height:1.5;">
+            ${leetcodeState.topic !== 'all' ? `No active LeetCode problems found for topic <strong>"${escapeHtml(topicName)}"</strong>.` : 'No LeetCode problems match your selected filters.'}
+          </p>
+          <button type="button" class="btn btn--secondary" id="btn-reset-leetcode-filters" style="margin-top:16px; padding:8px 18px; border-radius:20px; font-weight:600;">
+            Reset All Filters
+          </button>
+        </div>
+      `;
+
+      const resetBtn = gridContainer.querySelector('#btn-reset-leetcode-filters');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          resetAllLeetCodeFilters(gridContainer);
+        });
+      }
+      return;
     }
 
     // 3. Pagination calculation
@@ -5266,8 +5985,29 @@ for (let i = 1; i <= 3; i++) {
     const endIdx = pageSize > 0 ? Math.min(startIdx + pageSize, problems.length) : problems.length;
     const currentSlice = problems.slice(startIdx, endIdx);
 
-    // 4. Cards HTML
-    const cardsHTML = currentSlice.map(problem => {
+    // 4. Cards HTML with Subtle Difficulty Dividers
+    let cardsHTML = '';
+    let currentDifficultySection = null;
+
+    currentSlice.forEach(problem => {
+      if (problem.difficulty !== currentDifficultySection) {
+        currentDifficultySection = problem.difficulty;
+        const countInTotal = problems.filter(p => p.difficulty === currentDifficultySection).length;
+        const diffClass = currentDifficultySection === 'Easy' ? 'pill--easy' : (currentDifficultySection === 'Medium' ? 'pill--medium' : 'pill--hard');
+        const diffDot = currentDifficultySection === 'Easy' ? '🟢' : (currentDifficultySection === 'Medium' ? '🟡' : '🔴');
+
+        cardsHTML += `
+          <div class="lc-diff-divider">
+            <div class="lc-diff-divider__badge ${diffClass}">
+              <span>${diffDot}</span>
+              <span>${escapeHtml(currentDifficultySection)}</span>
+              <span class="lc-diff-divider__count">(${countInTotal})</span>
+            </div>
+            <div class="lc-diff-divider__line"></div>
+          </div>
+        `;
+      }
+
       const isSolved = solvedProblems.has(problem.slug);
       const diffClass = problem.difficulty === 'Easy' ? 'badge--easy' : (problem.difficulty === 'Medium' ? 'badge--medium' : 'badge--hard');
       const diffDot = problem.difficulty === 'Easy' ? '🟢' : (problem.difficulty === 'Medium' ? '🟡' : '🔴');
@@ -5285,7 +6025,7 @@ for (let i = 1; i <= 3; i++) {
         `<span class="leetcode-card__tag">${escapeHtml(tg)}</span>`
       ).join('');
 
-      return `
+      cardsHTML += `
         <div class="leetcode-card ${isSolved ? 'leetcode-card--solved' : ''}" data-lc-slug="${escapeHtml(problem.slug)}">
           <div class="leetcode-card__top">
             <div class="leetcode-card__top-left">
@@ -5315,13 +6055,13 @@ for (let i = 1; i <= 3; i++) {
               <span>View on LeetCode</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
-            <button class="lc-solved-btn ${isSolved ? 'lc-solved-btn--done' : ''}" data-solve-slug="${escapeHtml(problem.slug)}">
+            <button type="button" class="lc-solved-btn ${isSolved ? 'lc-solved-btn--done' : ''}" data-solve-slug="${escapeHtml(problem.slug)}">
               ${isSolved ? '✅ Solved' : 'Mark Solved'}
             </button>
           </div>
         </div>
       `;
-    }).join('');
+    });
 
     // 5. Pagination Controls HTML
     let paginationHTML = '';
@@ -5330,14 +6070,14 @@ for (let i = 1; i <= 3; i++) {
         paginationHTML = `
           <div class="leetcode-pagination">
             <span class="leetcode-page-info">Showing all ${problems.length} problems</span>
-            <button class="leetcode-view-all-toggle" id="btn-toggle-pagination">Switch to Pages (24 per page)</button>
+            <button type="button" class="leetcode-view-all-toggle" id="btn-toggle-pagination">Switch to Pages (24 per page)</button>
           </div>
         `;
       } else {
         let pageButtons = '';
         for (let i = 1; i <= totalPages; i++) {
           if (totalPages <= 7 || i === 1 || i === totalPages || Math.abs(i - page) <= 1) {
-            pageButtons += `<button class="leetcode-page-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            pageButtons += `<button type="button" class="leetcode-page-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
           } else if (i === page - 2 || i === page + 2) {
             pageButtons += `<span style="color:var(--text-muted); padding:0 4px;">…</span>`;
           }
@@ -5345,11 +6085,11 @@ for (let i = 1; i <= 3; i++) {
 
         paginationHTML = `
           <div class="leetcode-pagination">
-            <button class="leetcode-page-btn" id="btn-lc-prev" ${page === 1 ? 'disabled' : ''}>← Prev</button>
+            <button type="button" class="leetcode-page-btn" id="btn-lc-prev" ${page === 1 ? 'disabled' : ''}>← Prev</button>
             ${pageButtons}
-            <button class="leetcode-page-btn" id="btn-lc-next" ${page === totalPages ? 'disabled' : ''}>Next →</button>
+            <button type="button" class="leetcode-page-btn" id="btn-lc-next" ${page === totalPages ? 'disabled' : ''}>Next →</button>
             <span class="leetcode-page-info">Page ${page} of ${totalPages} (${problems.length} problems)</span>
-            <button class="leetcode-view-all-toggle" id="btn-toggle-view-all">View All (${problems.length})</button>
+            <button type="button" class="leetcode-view-all-toggle" id="btn-toggle-view-all">View All (${problems.length})</button>
           </div>
         `;
       }
@@ -5409,26 +6149,19 @@ for (let i = 1; i <= 3; i++) {
     const inlineResetBtn = gridContainer.querySelector('#btn-inline-reset-filters');
     if (inlineResetBtn) {
       inlineResetBtn.addEventListener('click', () => {
-        leetcodeState.topic = 'all';
-        leetcodeState.difficulty = 'all';
-        leetcodeState.search = '';
-        leetcodeState.page = 1;
-        const topicSelect = document.getElementById('leetcode-topic-select');
-        if (topicSelect) topicSelect.value = 'all';
-        const searchInput = document.getElementById('leetcode-search-input');
-        if (searchInput) searchInput.value = '';
-        document.querySelectorAll('.leetcode-diff-pill').forEach(p => {
-          p.classList.toggle('active', p.getAttribute('data-diff') === 'all');
-        });
-        updateRouterState('leetcode', null, null, false);
-        loadAndRenderCards(gridContainer);
+        resetAllLeetCodeFilters(gridContainer);
       });
     }
 
-    // Bind solve-toggle buttons (event delegation on the grid)
+    // Bind solve-toggle buttons
     gridContainer.querySelectorAll('.lc-solved-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
+        if (!authState.isLoggedIn) {
+          openLoginModal('Log in to track your LeetCode solved problems');
+          return;
+        }
+
         const slug = btn.getAttribute('data-solve-slug');
         const currentlySolved = solvedProblems.has(slug);
         await toggleLeetCodeSolved(slug, currentlySolved);
@@ -5464,6 +6197,9 @@ for (let i = 1; i <= 3; i++) {
           const fillElem = summaryBarElem.querySelector('.lc-solved-summary__fill');
           if (fillElem) fillElem.style.width = `${updatedPct}%`;
         }
+
+        // Live update Roadmap UI
+        updateRoadmapUI();
       });
     });
   }
