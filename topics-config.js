@@ -36,6 +36,10 @@
     'insertion-sort',
     'merge-sort',
     'quick-sort',
+
+    // Level 4 — Hashing (Unlocked topics 25, 26)
+    'hash-table',
+    'hash-set',
   ]);
 
   window.TOPIC_CONFIG = {

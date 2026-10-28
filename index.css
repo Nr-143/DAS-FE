@@ -7843,22 +7843,424 @@ html, body {
   }
 }
 
-@media (max-width: 360px) {
-  .sort-bar {
-    width: 24px;
+/* ============================================================
+   LEVEL 4 — HASHING VISUALIZERS & PLAYGROUNDS
+   ============================================================ */
+.hash-widget-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  margin: 18px 0;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.hash-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.hash-widget-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.hash-stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hash-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.hash-ctrl-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.hash-ctrl-btn--primary {
+  background: var(--accent-primary);
+  color: #ffffff !important;
+  border: none;
+}
+
+.hash-ctrl-btn--primary:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+}
+
+.hash-ctrl-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Array Chips Display */
+.hash-chips-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 4px;
+  margin-bottom: 14px;
+}
+
+.hash-chip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+.hash-chip-val {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fira Code', monospace;
+  font-weight: 700;
+  font-size: 1.15rem;
+  background: var(--bg-body);
+  border: 2px solid var(--border-default);
+  color: var(--text-primary);
+  transition: all 0.25s ease;
+}
+
+.hash-chip-val--active {
+  background: rgba(108, 99, 255, 0.2);
+  border-color: #6C63FF;
+  color: #6C63FF;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.hash-chip-val--match {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10B981;
+  color: #10B981;
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.hash-chip-val--visited {
+  opacity: 0.65;
+  background: var(--bg-body);
+  border-color: var(--border-subtle);
+}
+
+.hash-chip-idx {
+  font-size: 0.75rem;
+  font-family: 'Fira Code', monospace;
+  color: var(--text-muted);
+}
+
+/* Trace Status Narration Box */
+.hash-narration-box {
+  background: var(--bg-body);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  min-height: 54px;
+}
+
+/* Map/Set State Visual Table */
+.hash-state-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  font-size: 0.88rem;
+}
+
+.hash-state-table th {
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-default);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hash-state-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: 'Fira Code', monospace;
+}
+
+.hash-state-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hash-state-table tr.highlight-row {
+  background: rgba(108, 99, 255, 0.12);
+}
+
+/* Collision Buckets Grid */
+.hash-buckets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.hash-bucket-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-height: 56px;
+  transition: all 0.2s ease;
+}
+
+.hash-bucket-row--probed {
+  border-color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.hash-bucket-row--placed {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.hash-bucket-badge {
+  flex-shrink: 0;
+  width: 70px;
+  font-family: 'Fira Code', monospace;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--accent-primary);
+  text-align: center;
+}
+
+.hash-bucket-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-grow: 1;
+}
+
+.hash-node-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hash-node-arrow {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.hash-empty-slot {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* Load Factor Meter */
+.hash-load-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: var(--bg-body);
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+}
+
+.hash-load-bar-track {
+  flex-grow: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--border-default);
+  overflow: hidden;
+  position: relative;
+}
+
+.hash-load-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: #10B981;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.hash-load-bar-fill--warning {
+  background: #F59E0B;
+}
+
+.hash-load-bar-fill--danger {
+  background: #EF4444;
+}
+
+/* Interactive Playground Layout */
+.hash-playground-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.hash-input-field {
+  flex: 1 1 140px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-family: 'Fira Code', monospace;
+  box-sizing: border-box;
+}
+
+.hash-input-field:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+}
+
+.hash-log-terminal {
+  background: var(--bg-code);
+  color: #A6ACCD;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.82rem;
+  max-height: 150px;
+  overflow-y: auto;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.hash-log-entry {
+  margin-bottom: 4px;
+}
+
+.hash-log-entry--success {
+  color: #4ADE80;
+}
+
+.hash-log-entry--info {
+  color: #60A5FA;
+}
+
+.hash-log-entry--warn {
+  color: #FBBF24;
+}
+
+.hash-log-entry--err {
+  color: #F87171;
+}
+
+/* Deduplication tool box */
+.hash-dedupe-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--bg-body);
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  margin-top: 10px;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .hash-widget-card {
+    padding: 14px;
   }
-  .sort-bar-val {
-    font-size: 0.72rem;
+  .hash-stepper-controls {
+    width: 100%;
+    justify-content: stretch;
   }
-  .sort-col-wrapper {
-    min-width: 26px;
+  .hash-ctrl-btn {
+    flex: 1 1 auto;
+    font-size: 0.8rem;
+    padding: 8px 10px;
   }
-  .sort-algo-btn-group {
-    gap: 4px;
+  .hash-playground-form {
+    flex-direction: column;
   }
-  .sort-algo-btn {
-    font-size: 0.72rem;
-    padding: 4px 7px;
+  .hash-input-field {
+    width: 100%;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
