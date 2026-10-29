@@ -8264,6 +8264,393 @@ html, body {
   }
 }
 
+/* ============================================================
+   LEVEL 5 — TREES LEARNING PATH & INTERACTIVE COMPONENTS
+   ============================================================ */
+
+/* 1. Four-Module Navigation Strip */
+.level-modules-nav {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin: 14px 0 22px 0;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.level-modules-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.level-modules-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.level-modules-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(108, 99, 255, 0.12);
+  color: var(--accent-primary);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.level-modules-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.level-modules-progress {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.level-modules-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.level-module-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.level-module-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.level-module-btn--active {
+  background: rgba(108, 99, 255, 0.15) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.level-module-btn--done {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.level-module-btn--done .level-module-num {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+}
+
+.level-module-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-default);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.level-module-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+/* 2. Interactive SVG Tree Rendering */
+.tree-svg-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+  background: var(--bg-body);
+  border-radius: 12px;
+  border: 1px solid var(--border-default);
+  margin: 14px 0;
+  overflow-x: auto;
+}
+
+.tree-svg-canvas {
+  width: 100%;
+  max-width: 580px;
+  height: auto;
+  min-height: 230px;
+}
+
+.tree-edge {
+  stroke: var(--border-default);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.tree-edge--active {
+  stroke: var(--accent-primary);
+  stroke-width: 3.5;
+}
+
+.tree-node-group {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.tree-node-circle {
+  fill: var(--bg-surface);
+  stroke: var(--border-default);
+  stroke-width: 2.5;
+  transition: all 0.25s ease;
+}
+
+.tree-node-group:hover .tree-node-circle {
+  stroke: var(--accent-primary);
+  fill: rgba(108, 99, 255, 0.1);
+}
+
+.tree-node-group--active .tree-node-circle {
+  fill: rgba(108, 99, 255, 0.22);
+  stroke: #6C63FF;
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 8px rgba(108, 99, 255, 0.45));
+}
+
+.tree-node-group--visited .tree-node-circle {
+  fill: rgba(16, 185, 129, 0.18);
+  stroke: #10B981;
+  stroke-width: 2.5;
+}
+
+.tree-node-text {
+  fill: var(--text-primary);
+  font-family: 'Fira Code', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 3. Interactive Tree Inspector Grid */
+.tree-inspector-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.tree-prop-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tree-prop-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tree-prop-value {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 4. Call Stack & Queue Displays for Traversals */
+.tree-memory-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--bg-body);
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  min-height: 46px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.tree-stack-frame {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(108, 99, 255, 0.15);
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 600;
+  animation: popIn 0.2s ease;
+}
+
+.tree-queue-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10B981;
+  color: #10B981;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 600;
+  animation: popIn 0.2s ease;
+}
+
+/* 5. Tree Types & Formula Calculator */
+.tree-calc-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin: 16px 0;
+}
+
+.tree-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.tree-calc-metric {
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
+.tree-calc-metric-val {
+  font-family: 'Fira Code', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-top: 4px;
+}
+
+/* 6. Problem Library Cards */
+.tree-problems-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.tree-prob-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: all 0.2s ease;
+}
+
+.tree-prob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tree-prob-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tree-prob-num {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: rgba(108, 99, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.tree-prob-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.tree-prob-body {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tree-prob-dryrun {
+  background: var(--bg-body);
+  border-left: 4px solid var(--accent-primary);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .level-modules-nav {
+    padding: 12px 14px;
+  }
+  .level-modules-strip {
+    grid-template-columns: 1fr;
+  }
+  .tree-svg-canvas {
+    min-height: 190px;
+  }
+  .tree-calc-grid {
+    grid-template-columns: 1fr;
+  }
+  .tree-prob-card {
+    padding: 14px;
+  }
+}
+
 
 
 

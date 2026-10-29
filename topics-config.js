@@ -40,6 +40,14 @@
     // Level 4 — Hashing (Unlocked topics 25, 26)
     'hash-table',
     'hash-set',
+
+    // Level 5 — Trees (Unlocked topics 27, 28, 29, 30)
+    'tree-intro',
+    'binary-tree-types',
+    'binary-tree-traversals',
+    'binary-tree-operations',
+    'binary-trees',
+    'binary-search-tree',
   ]);
 
   window.TOPIC_CONFIG = {

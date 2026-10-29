@@ -613,7 +613,13 @@
     }
 
     // Explicit topic requested in URL
-    if (topicParam && topicsData.some(t => t.id === topicParam)) {
+    if (topicParam === 'binary-trees') topicParam = 'tree-intro';
+    if (topicParam === 'binary-search-tree') topicParam = 'binary-tree-operations';
+    const isKnownTopic = (topicsData && topicsData.some(t => t.id === topicParam)) ||
+      (window.LESSONS_CONTENT && window.LESSONS_CONTENT[topicParam]) ||
+      ['tree-intro', 'binary-tree-types', 'binary-tree-traversals', 'binary-tree-operations', 'binary-trees', 'binary-search-tree'].includes(topicParam);
+
+    if (topicParam && isKnownTopic) {
       if (isTopicUnlocked(topicParam)) {
         currentView = 'lesson';
         currentTopicId = topicParam;
@@ -713,53 +719,81 @@
     });
   }
 
+  const TOPICS_CACHE_KEY = 'dsa_cached_topics_v6';
+
   async function loadTopics() {
     // 1. Fast path: Instant Memory / localStorage Cache (0ms)
+    // Clear out any legacy or stale cache keys that lacked tree-intro
     try {
-      const cached = localStorage.getItem('dsa_cached_topics');
+      localStorage.removeItem('dsa_cached_topics');
+      localStorage.removeItem('dsa_cached_topics_v1');
+      localStorage.removeItem('dsa_cached_topics_v2');
+      localStorage.removeItem('dsa_cached_topics_v3');
+      localStorage.removeItem('dsa_cached_topics_v4');
+      localStorage.removeItem('dsa_cached_topics_v5');
+
+      const cached = localStorage.getItem(TOPICS_CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(t => t.id === 'tree-intro')) {
           topicsData = parsed.sort((a, b) => a.order - b.order);
+        } else {
+          localStorage.removeItem(TOPICS_CACHE_KEY);
         }
       }
     } catch (e) {}
 
-    // 2. Fetch local static data/topics.json (10-20ms from Vercel edge CDN)
-    if (!topicsData || topicsData.length === 0) {
+    // Helper to fetch and sync fresh static topics
+    const fetchFreshStaticTopics = async () => {
       try {
-        const localRes = await fetch('data/topics.json');
+        const localRes = await fetch(`data/topics.json?v=${Date.now()}`);
         if (localRes.ok) {
           const json = await localRes.json();
           const list = json.topics || json;
           if (Array.isArray(list) && list.length > 0) {
-            topicsData = list.sort((a, b) => a.order - b.order);
-            try { localStorage.setItem('dsa_cached_topics', JSON.stringify(topicsData)); } catch (e) {}
+            const freshTopics = list.sort((a, b) => a.order - b.order);
+            const needsUpdate = !topicsData || topicsData.length === 0 ||
+              topicsData.map(t => t.id).join(',') !== freshTopics.map(t => t.id).join(',');
+            topicsData = freshTopics;
+            try { localStorage.setItem(TOPICS_CACHE_KEY, JSON.stringify(topicsData)); } catch (e) {}
+            if (needsUpdate) {
+              render();
+            }
+            return true;
           }
         }
       } catch (err) {
         console.warn('Local topics.json fetch failed:', err.message);
       }
-    }
+      return false;
+    };
 
-    // 3. Fallback: if local file somehow failed, try backend with a 3-second timeout
+    // 2. Fetch local static data/topics.json (10-20ms)
     if (!topicsData || topicsData.length === 0) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(`${API_BASE}/topics`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const json = await res.json();
-          const rawTopics = json.topics || json.data || json;
-          if (Array.isArray(rawTopics) && rawTopics.length > 0) {
-            topicsData = rawTopics.sort((a, b) => a.order - b.order);
-            try { localStorage.setItem('dsa_cached_topics', JSON.stringify(topicsData)); } catch (e) {}
+      const ok = await fetchFreshStaticTopics();
+      if (!ok) {
+        // 3. Fallback: if local file failed, try backend with a 3-second timeout
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(`${API_BASE}/topics?v=${Date.now()}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const json = await res.json();
+            const rawTopics = json.topics || json.data || json;
+            if (Array.isArray(rawTopics) && rawTopics.length > 0) {
+              topicsData = rawTopics.sort((a, b) => a.order - b.order);
+              try { localStorage.setItem(TOPICS_CACHE_KEY, JSON.stringify(topicsData)); } catch (e) {}
+              render();
+            }
           }
+        } catch (err) {
+          console.warn('Backend topics fallback fetch failed:', err.message);
         }
-      } catch (err) {
-        console.warn('Backend topics fallback fetch failed:', err.message);
       }
+    } else {
+      // Revalidate in background to keep data continuously synchronized
+      fetchFreshStaticTopics().catch(() => {});
     }
   }
 
@@ -865,7 +899,9 @@
       group.topics.forEach(topic => {
         const isUnlocked = isTopicUnlocked(topic.id);
         const completed = isUnlocked && isCompleted(topic.id);
-        const isActive = currentView === 'lesson' && currentTopicId === topic.id;
+        const isAliasActive = (topic.id === 'binary-trees' && currentTopicId === 'tree-intro') ||
+          (topic.id === 'binary-search-tree' && currentTopicId === 'binary-tree-operations');
+        const isActive = currentView === 'lesson' && (currentTopicId === topic.id || isAliasActive);
 
         const item = document.createElement('a');
         item.className = 'sidebar__item';
@@ -1085,6 +1121,8 @@
      LESSON PAGE RENDERER
   ──────────────────────────────────────────── */
   function openLesson(topicId, tab = 'concept') {
+    if (topicId === 'binary-trees') topicId = 'tree-intro';
+    if (topicId === 'binary-search-tree') topicId = 'binary-tree-operations';
     if (!isTopicUnlocked(topicId)) {
       showToast('Coming Soon — Content preparation in progress.');
       return;
@@ -1107,13 +1145,31 @@
   }
 
   function renderLessonPage(topicId) {
+    if (topicId === 'binary-trees') topicId = 'tree-intro';
+    if (topicId === 'binary-search-tree') topicId = 'binary-tree-operations';
     const content = window.LESSONS_CONTENT ? (
       window.LESSONS_CONTENT[topicId] ||
       window.LESSONS_CONTENT[topicId.replace(/-/g, '')] ||
       window.LESSONS_CONTENT[topicId.replace('core-builtins', 'core-built-ins')] ||
       window.LESSONS_CONTENT[topicId.replace('variables-and-memory', 'variables-memory')]
     ) : null;
-    const topic = topicsData.find(t => t.id === topicId);
+    let topic = topicsData.find(t => t.id === topicId);
+    if (!topic && topicId === 'tree-intro') {
+      topic = topicsData.find(t => t.id === 'binary-trees');
+    }
+    if (!topic && topicId === 'binary-tree-operations') {
+      topic = topicsData.find(t => t.id === 'binary-search-tree');
+    }
+    if (!topic && content) {
+      topic = {
+        id: topicId,
+        title: content.title || topicId,
+        level: content.level || (topicId.startsWith('tree-') || topicId.startsWith('binary-tree') ? 5 : 1),
+        levelTitle: content.levelTitle || 'Trees',
+        order: topicId === 'tree-intro' ? 27 : (topicId === 'binary-tree-types' ? 28 : (topicId === 'binary-tree-traversals' ? 29 : 30)),
+        completed: isCompleted(topicId)
+      };
+    }
 
     if (!isTopicUnlocked(topicId)) {
       $main.innerHTML = `
@@ -1139,7 +1195,7 @@
       return;
     }
 
-    if (!content || !topic) {
+    if (!content) {
       $main.innerHTML = `
         <div class="lesson-page">
           <div class="lesson-breadcrumb">
@@ -1197,6 +1253,46 @@
       toggleBtn.addEventListener('click', () => {
         handleTopicCompletionToggle(topicId);
       });
+    }
+
+    // 2b. Level Modules Navigation (Level 5 Trees Path)
+    if (topic && topic.level === 5) {
+      const levelTopics = topicsData.filter(t => t.level === 5);
+      if (levelTopics.length > 1) {
+        const completedCount = levelTopics.filter(t => isCompleted(t.id)).length;
+        const navBox = document.createElement('div');
+        navBox.className = 'level-modules-nav';
+        navBox.innerHTML = `
+          <div class="level-modules-header">
+            <div class="level-modules-title-group">
+              <span class="level-modules-badge">Level 5 Path</span>
+              <span class="level-modules-title">Trees Curriculum</span>
+            </div>
+            <span class="level-modules-progress">${completedCount} of ${levelTopics.length} Modules Completed</span>
+          </div>
+          <div class="level-modules-strip">
+            ${levelTopics.map((m, idx) => {
+              const isDone = isCompleted(m.id);
+              const isActive = m.id === topicId;
+              return `
+                <button type="button" class="level-module-btn ${isActive ? 'level-module-btn--active' : ''} ${isDone ? 'level-module-btn--done' : ''}" data-topic-id="${m.id}" title="${escapeHtml(m.title)}">
+                  <span class="level-module-num">${isDone ? '✓' : idx + 1}</span>
+                  <span class="level-module-label">${escapeHtml(m.title)}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+        navBox.querySelectorAll('.level-module-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tid = btn.getAttribute('data-topic-id');
+            if (tid && tid !== topicId) {
+              openLesson(tid);
+            }
+          });
+        });
+        container.appendChild(navBox);
+      }
     }
 
     // 3. TABS BAR (Task 2 Vector Icons)
