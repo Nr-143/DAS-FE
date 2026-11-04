@@ -8651,6 +8651,369 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   LEVEL 6 — GRAPHS INTERACTIVE STYLES & RESPONSIVE COMPONENT LAYOUT
+   ========================================================================== */
+
+.level-module-btn--locked {
+  opacity: 0.65;
+  border-style: dashed;
+}
+
+.graph-svg-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.graph-svg-canvas {
+  width: 100%;
+  max-width: 540px;
+  height: auto;
+  min-height: 220px;
+  display: block;
+}
+
+.graph-edge {
+  stroke: var(--border-default);
+  stroke-width: 2.5;
+  transition: all 0.25s ease;
+}
+
+.graph-edge--active {
+  stroke: var(--accent-primary) !important;
+  stroke-width: 3.5 !important;
+}
+
+.graph-edge--visited {
+  stroke: #10B981 !important;
+  stroke-width: 3 !important;
+}
+
+.graph-edge--directed {
+  marker-end: url(#graph-arrow);
+}
+
+.graph-node-group {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.graph-node-group:hover {
+  transform: scale(1.08);
+}
+
+.graph-node-circle {
+  fill: var(--bg-body);
+  stroke: var(--border-accent);
+  stroke-width: 2.5;
+  transition: all 0.25s ease;
+}
+
+.graph-node-group:hover .graph-node-circle {
+  stroke: var(--accent-primary);
+  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.4));
+}
+
+.graph-node-group--active .graph-node-circle {
+  fill: rgba(245, 158, 11, 0.2) !important;
+  stroke: #F59E0B !important;
+  stroke-width: 3.5 !important;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+}
+
+.graph-node-group--visited .graph-node-circle {
+  fill: rgba(16, 185, 129, 0.18) !important;
+  stroke: #10B981 !important;
+}
+
+.graph-node-group--queue .graph-node-circle {
+  fill: rgba(59, 130, 246, 0.18) !important;
+  stroke: #3B82F6 !important;
+}
+
+.graph-node-text {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--text-primary);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* Graph Inspector Panel */
+.graph-inspector-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.graph-prop-card {
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.graph-prop-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.graph-prop-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  font-family: 'Fira Code', monospace;
+}
+
+/* Adjacency Matrix & List Interactive Split */
+.graph-matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  margin: 12px 0;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.88rem;
+}
+
+.graph-matrix-cell {
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graph-matrix-cell:hover {
+  background: var(--accent-gradient-subtle);
+  border-color: var(--accent-primary);
+}
+
+.graph-matrix-cell--connected {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10B981;
+  font-weight: 700;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.graph-matrix-cell--active {
+  background: rgba(245, 158, 11, 0.3) !important;
+  color: #F59E0B !important;
+  border-color: #F59E0B !important;
+  transform: scale(1.05);
+}
+
+.graph-adjlist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graph-adjlist-row:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-gradient-subtle);
+}
+
+.graph-adjlist-row--active {
+  border-color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+.graph-adjlist-entry {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.graph-adjlist-entry:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+/* Island Grid 2D Visualizer */
+.graph-island-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 56px);
+  gap: 6px;
+  justify-content: center;
+  margin: 16px auto;
+  user-select: none;
+}
+
+.island-cell {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fira Code', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.island-cell--land {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.island-cell--water {
+  background: rgba(59, 130, 246, 0.18);
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.island-cell--active {
+  border-color: #F59E0B !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+  transform: scale(1.08);
+}
+
+.island-cell--visited {
+  border-color: #8B5CF6 !important;
+  background: rgba(139, 92, 246, 0.3) !important;
+  color: #C4B5FD !important;
+}
+
+.island-cell--min {
+  border-color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.35) !important;
+  color: #FEF3C7 !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+}
+
+/* Graph Problem Accordion Cards */
+.graph-prob-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: all 0.2s ease;
+  margin-bottom: 14px;
+}
+
+.graph-prob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.graph-prob-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.graph-prob-num {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: rgba(108, 99, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.graph-prob-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.graph-prob-body {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.graph-prob-dryrun {
+  background: var(--bg-body);
+  border-left: 4px solid var(--accent-primary);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* Mobile Responsive Optimization down to 320px */
+@media (max-width: 600px) {
+  .graph-svg-canvas {
+    min-height: 180px;
+  }
+  .graph-inspector-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+  .graph-repr-compare {
+    grid-template-columns: 1fr;
+  }
+  .graph-island-grid {
+    grid-template-columns: repeat(4, 46px);
+    gap: 4px;
+  }
+  .island-cell {
+    width: 46px;
+    height: 46px;
+    font-size: 0.88rem;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .graph-matrix-table {
+    font-size: 0.78rem;
+  }
+  .graph-matrix-cell {
+    padding: 6px 6px;
+    min-width: 28px;
+    min-height: 36px;
+  }
+  .graph-prob-card {
+    padding: 14px;
+  }
+}
+
 
 
 

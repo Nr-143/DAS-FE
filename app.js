@@ -719,11 +719,11 @@
     });
   }
 
-  const TOPICS_CACHE_KEY = 'dsa_cached_topics_v6';
+  const TOPICS_CACHE_KEY = 'dsa_cached_topics_v7';
 
   async function loadTopics() {
     // 1. Fast path: Instant Memory / localStorage Cache (0ms)
-    // Clear out any legacy or stale cache keys that lacked tree-intro
+    // Clear out any legacy or stale cache keys
     try {
       localStorage.removeItem('dsa_cached_topics');
       localStorage.removeItem('dsa_cached_topics_v1');
@@ -731,11 +731,12 @@
       localStorage.removeItem('dsa_cached_topics_v3');
       localStorage.removeItem('dsa_cached_topics_v4');
       localStorage.removeItem('dsa_cached_topics_v5');
+      localStorage.removeItem('dsa_cached_topics_v6');
 
       const cached = localStorage.getItem(TOPICS_CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(t => t.id === 'tree-intro')) {
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(t => t.id === 'graph-representation')) {
           topicsData = parsed.sort((a, b) => a.order - b.order);
         } else {
           localStorage.removeItem(TOPICS_CACHE_KEY);
@@ -1255,9 +1256,9 @@
       });
     }
 
-    // 2b. Level Modules Navigation (Level 5 Trees Path)
-    if (topic && topic.level === 5) {
-      const levelTopics = topicsData.filter(t => t.level === 5);
+    // 2b. Level Modules Navigation (Level 5 Trees & Level 6 Graphs)
+    if (topic && (topic.level === 5 || topic.level === 6)) {
+      const levelTopics = topicsData.filter(t => t.level === topic.level);
       if (levelTopics.length > 1) {
         const completedCount = levelTopics.filter(t => isCompleted(t.id)).length;
         const navBox = document.createElement('div');
@@ -1265,8 +1266,8 @@
         navBox.innerHTML = `
           <div class="level-modules-header">
             <div class="level-modules-title-group">
-              <span class="level-modules-badge">Level 5 Path</span>
-              <span class="level-modules-title">Trees Curriculum</span>
+              <span class="level-modules-badge">Level ${topic.level} Path</span>
+              <span class="level-modules-title">${escapeHtml(topic.levelTitle)} Curriculum</span>
             </div>
             <span class="level-modules-progress">${completedCount} of ${levelTopics.length} Modules Completed</span>
           </div>
@@ -1274,9 +1275,10 @@
             ${levelTopics.map((m, idx) => {
               const isDone = isCompleted(m.id);
               const isActive = m.id === topicId;
+              const isUnlocked = isTopicUnlocked(m.id);
               return `
-                <button type="button" class="level-module-btn ${isActive ? 'level-module-btn--active' : ''} ${isDone ? 'level-module-btn--done' : ''}" data-topic-id="${m.id}" title="${escapeHtml(m.title)}">
-                  <span class="level-module-num">${isDone ? '✓' : idx + 1}</span>
+                <button type="button" class="level-module-btn ${isActive ? 'level-module-btn--active' : ''} ${isDone ? 'level-module-btn--done' : ''} ${!isUnlocked ? 'level-module-btn--locked' : ''}" data-topic-id="${m.id}" title="${escapeHtml(m.title)}${!isUnlocked ? ' (Coming Soon)' : ''}">
+                  <span class="level-module-num">${isDone ? '✓' : (!isUnlocked ? '🔒' : idx + 1)}</span>
                   <span class="level-module-label">${escapeHtml(m.title)}</span>
                 </button>
               `;
@@ -1287,7 +1289,11 @@
           btn.addEventListener('click', () => {
             const tid = btn.getAttribute('data-topic-id');
             if (tid && tid !== topicId) {
-              openLesson(tid);
+              if (isTopicUnlocked(tid)) {
+                openLesson(tid);
+              } else {
+                showToast('Coming Soon — Content preparation in progress.');
+              }
             }
           });
         });

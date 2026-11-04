@@ -48,6 +48,11 @@
     'binary-tree-operations',
     'binary-trees',
     'binary-search-tree',
+
+    // Level 6 — Graphs (Unlocked topics 31, 32, 33)
+    'graph-representation',
+    'breadth-first-search',
+    'depth-first-search',
   ]);
 
   window.TOPIC_CONFIG = {
